@@ -16,21 +16,34 @@ import { Ionicons } from '@expo/vector-icons';
 import { Product } from '../contexts/CartContext';
 import { api } from '../services/api';
 import { CustomerLayout } from '../layouts';
-import CarouselBanner from '../components/CarouselBanner';
-import { Slider, BannerPopup as BannerPopupType } from '../types';
+import { Slider } from '../types';
 import Footer from '../components/Footer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ProductCardResponsive from '../components/ProductCardResponsive';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
-import BannerPopup from '../components/BannerPopup';
 
-// Banner data for carousel
-const banners = [
-  { id: '1', image: require('../assets/images/banner.jpg') },
-  { id: '2', image: require('../assets/images/banner.jpg') },
-  { id: '3', image: require('../assets/images/banner.jpg') }
-];
+// Update Product type to match new structure
+interface Product {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  category_id: number;
+  colors: Array<{
+    id: number;
+    color_name: string;
+    color_code: string;
+    image: string;
+    colorSizes: Array<{
+      id: number;
+      size: {
+        id: number;
+        size_name: string;
+      }
+    }>
+  }>;
+}
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -39,24 +52,20 @@ export default function HomeScreen() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [sliders, setSliders] = useState<Slider[]>([]);
-  const [bannerPopup, setBannerPopup] = useState<BannerPopupType | null>(null);
-  const [showBannerPopup, setShowBannerPopup] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeSlide, setActiveSlide] = useState(0);
-  const [hasViewedBanner, setHasViewedBanner] = useState(false);
 
-  // Check if banner has been viewed
-  useEffect(() => {
-    const checkBannerViewed = async () => {
-      try {
-        const viewed = await AsyncStorage.getItem('bannerViewed');
-        setHasViewedBanner(!!viewed);
-      } catch (error) {
-        console.error('Error checking banner viewed status:', error);
-      }
+  // Transform product data
+  const transformProduct = useCallback((product: any): Product => {
+    return {
+      id: product.id.toString(),
+      name: product.name,
+      description: product.description,
+      price: Number(product.price),
+      category_id: product.category_id,
+      colors: product.colors || []
     };
-    checkBannerViewed();
   }, []);
 
   // Fetch all data
@@ -65,35 +74,35 @@ export default function HomeScreen() {
       console.log('Starting fetchData...');
       const [
         categoriesResponse,
-        hotProductsResponse,
-        slidersResponse,
-        bannerPopupResponse
+        productsResponse,
       ] = await Promise.all([
         api.categories.getAll(),
-        api.products.getHotProducts(),
-        api.getSliders(),
-        api.getBannerPopup()
+        api.products.getAll(true, 1, 10), // Lấy 10 sản phẩm mới nhất cho trang chủ
       ]);
 
       setCategories(categoriesResponse);
-      setProducts(hotProductsResponse);
-      setSliders(slidersResponse || []);
+      
+      // Transform products data
+      const transformedProducts = productsResponse.products.map(transformProduct);
+      setProducts(transformedProducts);
 
-      // Chỉ set banner khi có data mới và chưa có banner
-      if (bannerPopupResponse && !bannerPopup) {
-        setBannerPopup(bannerPopupResponse);
-        setShowBannerPopup(true);
-      }
-
-      // Register notification token only if needed
+      // Register notification token only if user is logged in
       try {
-        const token = await AsyncStorage.getItem('authToken');
-        if (token) {
-          const pushToken = await Notifications.getExpoPushTokenAsync({
-            projectId: Constants.expoConfig?.extra?.eas?.projectId || Constants.expoConfig?.extra?.projectId,
-          });
-          if (pushToken) {
-            await api.notifications.registerToken(pushToken.data);
+        const [token, userStr] = await Promise.all([
+          AsyncStorage.getItem('authToken'),
+          AsyncStorage.getItem('user')
+        ]);
+
+        if (token && userStr) {
+          const user = JSON.parse(userStr);
+          // Only register token for admin users
+          if (user.role === 'ROLE_ADMIN') {
+            const pushToken = await Notifications.getExpoPushTokenAsync({
+              projectId: Constants.expoConfig?.extra?.eas?.projectId || Constants.expoConfig?.extra?.projectId,
+            });
+            if (pushToken) {
+              await api.notifications.registerToken(pushToken.data);
+            }
           }
         }
       } catch (error) {
@@ -105,7 +114,7 @@ export default function HomeScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, [bannerPopup]);
+  }, [transformProduct]);
 
   // Handle refresh
   const handleRefresh = useCallback(async () => {
@@ -145,17 +154,6 @@ export default function HomeScreen() {
     fetchData();
   }, [fetchData]);
 
-  // Render các item cho carousel
-  const renderBannerItem = ({ item }: { item: { id: string, image: any } }) => {
-    return (
-      <Image
-        source={item.image}
-        style={styles.bannerImage}
-        contentFit="cover"
-      />
-    );
-  };
-
   // Render danh mục
   const renderCategoryItem = ({ item }: { item: any }) => {
     return (
@@ -194,6 +192,11 @@ export default function HomeScreen() {
     router.push(`/product/${productId}`);
   }, [router]);
 
+  const handleAddToCart = useCallback((productId: string) => {
+    // Implement the logic to add a product to the cart
+    console.log(`Adding product ${productId} to cart`);
+  }, []);
+
   const navigationProps = {
     showLogo: true,
     showBackButton: false,
@@ -206,11 +209,6 @@ export default function HomeScreen() {
     onProductsPress: () => router.push('/explore'),
     onAccountPress: () => router.push('/account'),
   };
-
-  const handleBannerClose = useCallback(() => {
-    console.log('Closing banner...');
-    setShowBannerPopup(false); // Chỉ ẩn banner, không xóa data
-  }, []);
 
   if (isLoading && !isRefreshing) {
     return (
@@ -237,17 +235,6 @@ export default function HomeScreen() {
           />
         }
       >
-        {/* Banner Carousel */}
-        {sliders?.length > 0 && (
-          <CarouselBanner
-            data={sliders.map(slider => ({
-              id: slider.id,
-              image: slider.image,
-              uri: slider.image
-            }))}
-          />
-        )}
-
         {/* Categories Section */}
         <View style={styles.sectionContainer}>
           <View style={styles.sectionHeader}>
@@ -283,26 +270,15 @@ export default function HomeScreen() {
                 id={item.id}
                 name={item.name}
                 price={item.price}
-                image={item.image}
+                colors={item.colors}
                 onPress={handleProductPress}
+                onAddToCart={handleAddToCart}
               />
             ))}
           </View>
         </View>
         <Footer />
       </ScrollView>
-
-      {/* Banner Popup */}
-      {
-        showBannerPopup && (
-          <BannerPopup
-            banner={bannerPopup}
-            onClose={handleBannerClose}
-          />
-        )
-      }
-
-
     </CustomerLayout>
   );
 }

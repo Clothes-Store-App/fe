@@ -5,12 +5,18 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import StyleSheet from '../styles/StyleSheet';
 import { scale, verticalScale, getResponsiveValue } from '../styles/responsive';
+import { formatPrice } from '../utils/format';
 
 export type ProductCardProps = {
   id: string;
   name: string;
   price: number;
-  image: string;
+  colors?: Array<{
+    id: number;
+    color_name: string;
+    color_code: string;
+    image: string;
+  }>;
   discount?: number;
   category_id?: string;
   description?: string;
@@ -27,7 +33,7 @@ const ProductCardResponsive: React.FC<ProductCardProps> = ({
   id,
   name,
   price,
-  image,
+  colors,
   discount,
   onPress,
   onAddToCart,
@@ -37,11 +43,11 @@ const ProductCardResponsive: React.FC<ProductCardProps> = ({
   showAddToCart = true,
   style,
 }) => {
-  const { colors } = useTheme();
+  const { colors: themeColors } = useTheme();
 
   // Tính giá đã giảm nếu có discount
   const finalPrice = discount ? price - (price * discount / 100) : price;
-  
+
   // Format giá tiền
   const formatPrice = (value: number) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -50,7 +56,10 @@ const ProductCardResponsive: React.FC<ProductCardProps> = ({
       minimumFractionDigits: 0
     }).format(value);
   };
-  
+
+  // Lấy ảnh từ màu đầu tiên nếu có
+  const productImage = colors && colors.length > 0 ? colors[0].image : null;
+
   // Tạo style cho image
   const getImageStyle = () => {
     const baseStyle: any[] = [styles.image];
@@ -61,7 +70,7 @@ const ProductCardResponsive: React.FC<ProductCardProps> = ({
   };
 
   return (
-    <View 
+    <View
       style={[
         styles.container,
         cardWidth && { width: cardWidth },
@@ -70,52 +79,76 @@ const ProductCardResponsive: React.FC<ProductCardProps> = ({
       ]}
     >
       <TouchableOpacity
-        style={[styles.card, { backgroundColor: colors.cardBackground }]}
+        style={[styles.card, { backgroundColor: themeColors.cardBackground }]}
         onPress={() => onPress(id)}
         activeOpacity={0.7}
       >
         {/* Ảnh sản phẩm */}
-        <Image
-          source={{ uri: image }}
-          style={getImageStyle()}
-          contentFit="cover"
-          transition={300}
-        />
-        
+        {productImage ? (
+          <Image
+            source={{ uri: productImage }}
+            style={getImageStyle()}
+            contentFit="cover"
+            transition={300}
+          />
+        ) : (
+          <View style={[getImageStyle(), { backgroundColor: themeColors.border }]} />
+        )}
+
         {/* Nhãn giảm giá (nếu có) */}
         {discount ? (
-          <View style={[styles.discountBadge, { backgroundColor: colors.error }]}>
+          <View style={[styles.discountBadge, { backgroundColor: themeColors.error }]}>
             <Text style={styles.discountText}>-{discount}%</Text>
           </View>
         ) : null}
-        
+
         <View style={styles.infoContainer}>
           {/* Tên sản phẩm */}
-          <Text 
-            style={[styles.name, { color: colors.text }]} 
+          <Text
+            style={[styles.name, { color: themeColors.text }]}
             numberOfLines={2}
           >
             {name}
           </Text>
-          
+
           {/* Giá */}
           <View style={styles.priceContainer}>
-            <Text style={[styles.price, { color: colors.primary }]}>
+            <Text style={[styles.price, { color: themeColors.primary }]}>
               {formatPrice(finalPrice)}
             </Text>
-            
+
             {discount ? (
               <Text style={styles.originalPrice}>
                 {formatPrice(price)}
               </Text>
             ) : null}
           </View>
+
+          {/* Hiển thị màu sắc */}
+          {colors && colors.length > 0 && (
+            <View style={styles.colorsContainer}>
+              {colors.slice(0, 3).map((color) => (
+                <View
+                  key={color.id}
+                  style={[
+                    styles.colorDot,
+                    { backgroundColor: color.color_code }
+                  ]}
+                />
+              ))}
+              {colors.length > 3 && (
+                <Text style={[styles.moreColors, { color: themeColors.text }]}>
+                  +{colors.length - 3}
+                </Text>
+              )}
+            </View>
+          )}
         </View>
-        
+
         {/* Nút thêm vào giỏ hàng */}
         {showAddToCart && (
           <TouchableOpacity
-            style={[styles.addButton, { backgroundColor: colors.primary }]}
+            style={[styles.addButton, { backgroundColor: themeColors.primary }]}
             onPress={() => onAddToCart && onAddToCart(id)}
           >
             <Ionicons name="cart-outline" size={scale(16)} color="white" />
@@ -188,8 +221,25 @@ const styles = StyleSheet.responsive({
       justifyContent: 'center',
       alignItems: 'center',
     },
+    colorsContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: scale(4),
+    },
+    colorDot: {
+      width: scale(12),
+      height: scale(12),
+      borderRadius: scale(6),
+      marginRight: scale(4),
+      borderWidth: 1,
+      borderColor: '#ddd',
+    },
+    moreColors: {
+      fontSize: scale(12),
+      marginLeft: scale(2),
+    },
   },
-  
+
   // Custom styles for smaller screens
   xs: {
     container: {
@@ -212,7 +262,7 @@ const styles = StyleSheet.responsive({
       fontSize: scale(10),
     },
   },
-  
+
   // Custom styles for larger tablets
   lg: {
     container: {

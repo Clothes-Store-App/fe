@@ -13,29 +13,32 @@ const accentDark = '#FF5F8F';
 const successLight = '#4DD663';
 const successDark = '#34BE4B';
 
+const tintColorLight = '#648286';
+const tintColorDark = '#648286';
+
 const Colors = {
   light: {
     // Base colors
-    text: '#1F2433',
-    background: '#FFFFFF',
-    tint: primaryLight,
+    text: '#000',
+    background: '#fff',
+    tint: tintColorLight,
     
     // UI elements
-    tabIconDefault: '#C7C9D9',
-    tabIconSelected: primaryLight,
-    separator: '#EAECF0',
-    cardBackground: '#F9FAFB',
+    tabIconDefault: '#ccc',
+    tabIconSelected: tintColorLight,
+    separator: '#eee',
+    cardBackground: '#fff',
     
     // Brand colors
-    primary: primaryLight,
-    secondary: '#FFE6EC',
-    accent: accentLight,
+    primary: '#648286',
+    secondary: '#757575',
+    accent: '#648286',
     
     // Status colors
-    success: successLight,
-    error: '#FF4D4D',
-    warning: '#FFB443',
-    info: '#3AA0FF',
+    success: '#4CAF50',
+    error: '#B00020',
+    warning: '#FB8C00',
+    info: '#648286',
     
     // Neutral colors
     gray: '#8F95B2',
@@ -44,30 +47,34 @@ const Colors = {
     darkGray: '#646A86',
     
     // Shadows
-    shadowColor: 'rgba(0, 0, 0, 0.1)',
+    shadowColor: '#000',
+    
+    // Additional colors
+    disabled: '#E0E0E0',
+    placeholder: '#9E9E9E',
   },
   dark: {
     // Base colors
-    text: '#FFFFFF',
-    background: '#121827',
-    tint: primaryDark,
+    text: '#fff',
+    background: '#000',
+    tint: tintColorDark,
     
     // UI elements
-    tabIconDefault: '#70768C',
-    tabIconSelected: primaryDark,
-    separator: '#262D40',
-    cardBackground: '#1E2336',
+    tabIconDefault: '#ccc',
+    tabIconSelected: tintColorDark,
+    separator: '#333',
+    cardBackground: '#121212',
     
     // Brand colors
-    primary: primaryDark,
-    secondary: '#3D2A38',
-    accent: accentDark,
+    primary: '#648286',
+    secondary: '#9E9E9E',
+    accent: '#648286',
     
     // Status colors
-    success: successDark,
-    error: '#FF5C5C',
-    warning: '#FFB443',
-    info: '#49A8FF',
+    success: '#4CAF50',
+    error: '#CF6679',
+    warning: '#FB8C00',
+    info: '#648286',
     
     // Neutral colors
     gray: '#8E93A8',
@@ -76,7 +83,11 @@ const Colors = {
     darkGray: '#BEC1CF',
     
     // Shadows
-    shadowColor: 'rgba(0, 0, 0, 0.3)',
+    shadowColor: '#000',
+    
+    // Additional colors
+    disabled: '#424242',
+    placeholder: '#757575',
   },
 };
 

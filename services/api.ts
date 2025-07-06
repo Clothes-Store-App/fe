@@ -7,7 +7,7 @@ import Constants from 'expo-constants';
 
 // API Configuration from environment variables
 const API_CONFIG = {
-  BASE_URL: process.env.VITE_BASE_URL || 'https://740f-14-236-74-106.ngrok-free.app/api',
+  BASE_URL: process.env.VITE_BASE_URL || 'http://192.168.20.106:8000/api',
 };
 
 // Timeout cho API requests (ms)
@@ -135,15 +135,23 @@ const refreshAuthToken = async () => {
 // Helper function to handle API responses
 const handleResponse = async (response: Response) => {
   try {
+    console.log(`Response status: ${response.status} ${response.statusText}`);
+    console.log('Response headers:', response.headers);
+    
     const data = await response.json();
+    console.log('Response data:', data);
 
     if (!response.ok) {
+      console.error(`API error: ${response.status} - ${data.message || 'Unknown error'}`);
       throw new Error(data.message || 'API request failed');
     }
 
     return data.data || data; // Lấy phần data từ response hoặc toàn bộ response
   } catch (error) {
     console.error('Response parsing error:', error);
+    if (error instanceof Error) {
+      console.error('Error stack:', error.stack);
+    }
     throw error;
   }
 };
@@ -151,8 +159,13 @@ const handleResponse = async (response: Response) => {
 // Helper for API requests with auth token
 const fetchApi = async (endpoint: string, method: string = 'GET', body?: any, requiresAuth: boolean = true, useCache: boolean = true, retryCount: number = 0) => {
   try {
+    console.log(`Making ${method} request to ${endpoint}`);
+    console.log('Request params:', { requiresAuth, useCache, retryCount });
+
     // Check network connection
     const isConnected = await checkNetwork();
+    console.log('Network connected:', isConnected);
+
     if (!isConnected) {
       // If offline and we have cached data for GET requests, return it
       const cacheKey = `${method}:${endpoint}:${JSON.stringify(body || {})}`;
@@ -182,92 +195,64 @@ const fetchApi = async (endpoint: string, method: string = 'GET', body?: any, re
 
     if (requiresAuth) {
       const token = await AsyncStorage.getItem('authToken');
+      console.log('Auth token:', token ? 'Present' : 'Not present');
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
     }
 
+    console.log('Request headers:', headers);
+
     const options: RequestInit = {
       method,
       headers,
-      // Tắt credentials vì đang sử dụng token trong header
-      // credentials: 'include' không hoạt động tốt trên React Native
     };
 
     if (body && method !== 'GET') {
       options.body = JSON.stringify(body);
+      console.log('Request body:', body);
     }
 
     console.log(`Calling API: ${method} ${API_CONFIG.BASE_URL}${endpoint}`);
-    const response = await fetchWithTimeout(`${API_CONFIG.BASE_URL}${endpoint}`, options, API_TIMEOUT);
+    
+    try {
+      const response = await fetchWithTimeout(`${API_CONFIG.BASE_URL}${endpoint}`, options, API_TIMEOUT);
+      const result = await handleResponse(response);
 
-    // Kiểm tra nếu token hết hạn
-    if (response.status === 401 && requiresAuth) {
-      // Nếu đang refresh token, thêm request vào queue
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        }).then(token => {
-          headers['Authorization'] = `Bearer ${token}`;
-          return fetchWithTimeout(`${API_CONFIG.BASE_URL}${endpoint}`, options, API_TIMEOUT)
-            .then(handleResponse);
-        }).catch(err => {
-          throw err;
-        });
+      // Cache successful GET requests
+      if (method === 'GET' && useCache) {
+        const cacheKey = `${method}:${endpoint}`;
+        apiCache[cacheKey] = {
+          data: result,
+          timestamp: Date.now()
+        };
+        console.log(`Cached data for: ${endpoint}`);
       }
 
-      isRefreshing = true;
-
-      try {
-        // Làm mới token
-        const newToken = await refreshAuthToken();
-
-        // Cập nhật Authorization header với token mới
-        headers['Authorization'] = `Bearer ${newToken}`;
-
-        // Reset trạng thái refresh
-        isRefreshing = false;
-
-        // Xử lý queue các request thất bại
-        processQueue(null, newToken);
-
-        // Thực hiện lại request ban đầu với token mới
-        const newResponse = await fetchWithTimeout(`${API_CONFIG.BASE_URL}${endpoint}`, {
-          ...options,
-          headers,
-        }, API_TIMEOUT);
-
-        return await handleResponse(newResponse);
-      } catch (error) {
-        isRefreshing = false;
-        processQueue(error, null);
-        throw error;
+      return result;
+    } catch (error) {
+      console.error(`API call failed:`, error);
+      
+      if (error instanceof Error && error.message === 'Token expired' && retryCount < MAX_RETRIES) {
+        console.log(`Server error, retrying (${retryCount + 1}/${MAX_RETRIES})...`);
+        if (!isRefreshing) {
+          isRefreshing = true;
+          try {
+            await refreshAuthToken();
+          } finally {
+            isRefreshing = false;
+          }
+        }
+        return fetchApi(endpoint, method, body, requiresAuth, useCache, retryCount + 1);
       }
+      
+      throw error;
     }
-
-    // Handle server errors with retry logic
-    if (response.status >= 500 && retryCount < MAX_RETRIES) {
-      console.log(`Server error, retrying (${retryCount + 1}/${MAX_RETRIES})...`);
-      // Exponential backoff: 1s, 2s, 4s, ...
-      const delay = 1000 * Math.pow(2, retryCount);
-      await new Promise(resolve => setTimeout(resolve, delay));
-      return fetchApi(endpoint, method, body, requiresAuth, useCache, retryCount + 1);
-    }
-
-    const data = await handleResponse(response);
-
-    // Cache GET request responses
-    if (method === 'GET' && useCache) {
-      const cacheKey = `${method}:${endpoint}`;
-      apiCache[cacheKey] = {
-        data,
-        timestamp: Date.now()
-      };
-    }
-
-    return data;
   } catch (error) {
-    console.error('API Error:', error);
+    console.error(`Error in fetchApi for ${endpoint}:`, error);
+    if (error instanceof Error) {
+      console.error('Error stack:', error.stack);
+    }
     throw error;
   }
 };
@@ -396,6 +381,82 @@ interface ProductsResponse {
   pagination: PaginationData;
 }
 
+// Auth API methods
+const auth = {
+  register: async (data: { name: string; email: string; password: string; phone: string }) => {
+    try {
+      const response = await fetchApi('/auth/register', 'POST', data, false);
+      return response;
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw error;
+    }
+  },
+
+  login: async (email: string, password: string) => {
+    try {
+      const pushToken = await Notifications.getExpoPushTokenAsync({
+        projectId: Constants.expoConfig?.extra?.eas?.projectId,
+      });
+      
+      const response = await fetchApi('/auth/login', 'POST', {
+        email,
+        password,
+        pushToken: pushToken.data,
+      }, false);
+      return response;
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
+  },
+
+  logout: async () => {
+    try {
+      await fetchApi('/auth/logout', 'POST', null, true);
+      await AsyncStorage.removeItem('authToken');
+      await AsyncStorage.removeItem('refreshToken');
+      await AsyncStorage.removeItem('user');
+    } catch (error) {
+      console.error('Logout error:', error);
+      throw error;
+    }
+  },
+
+  refresh: async () => {
+    try {
+      const refreshToken = await AsyncStorage.getItem('refreshToken');
+      if (!refreshToken) {
+        throw new Error('No refresh token available');
+      }
+
+      const response = await fetchApi('/auth/refresh', 'POST', { refreshToken }, false);
+      
+      if (response && response.accessToken) {
+        await AsyncStorage.setItem('authToken', response.accessToken);
+        if (response.refreshToken) {
+          await AsyncStorage.setItem('refreshToken', response.refreshToken);
+        }
+      }
+      
+      return response;
+    } catch (error) {
+      console.error('Refresh token error:', error);
+      throw error;
+    }
+  },
+
+  getProfile: async () => {
+    try {
+      const response = await fetchApi('/auth/profile', 'GET', null, true, false);
+      return response;
+    } catch (error) {
+      console.error('Get profile error:', error);
+      throw error;
+    }
+  },
+};
+
 // API functions
 export const api = {
   // Cache management
@@ -411,88 +472,7 @@ export const api = {
   },
 
   // Authentication
-  auth: {
-    login: async (email: string, password: string) => {
-      try {
-        console.log('Login attempt:', email);
-        const data = await fetchApi('/auth/login', 'POST', { email, password }, false, false);
-
-        // Lưu thông tin user và token
-        if (data.user) {
-          console.log('Login successful');
-          await AsyncStorage.setItem('user', JSON.stringify(data.user));
-
-          // Nếu là admin, đăng ký push token
-          if (data.user.role === 'ROLE_ADMIN') {
-            try {
-              const pushToken = await Notifications.getExpoPushTokenAsync({
-                projectId: Constants.expoConfig?.extra?.eas?.projectId || Constants.expoConfig?.extra?.projectId,
-              });
-              if (pushToken) {
-                await api.notifications.registerToken(pushToken.data);
-              }
-            } catch (error) {
-              console.error('Failed to register push token:', error);
-            }
-          }
-        }
-
-        if (data.accessToken) {
-          await AsyncStorage.setItem('authToken', data.accessToken);
-        }
-
-        if (data.refreshToken) {
-          await AsyncStorage.setItem('refreshToken', data.refreshToken);
-        }
-
-        return data;
-      } catch (error) {
-        console.error('Login failed:', error);
-        throw error;
-      }
-    },
-    logout: async () => {
-      try {
-        // Kiểm tra nếu là admin thì hủy đăng ký push token
-        const userStr = await AsyncStorage.getItem('user');
-        if (userStr) {
-          const user = JSON.parse(userStr);
-          if (user.role === 'ROLE_ADMIN') {
-            try {
-              await api.notifications.unregisterToken();
-            } catch (error) {
-              console.error('Failed to unregister push token:', error);
-            }
-          }
-        }
-
-        const response = await fetchApi('/auth/logout', 'POST', undefined, true, false);
-        console.log('Logout successful');
-
-        // Clear cache on logout
-        apiCache = {};
-        // Xóa dữ liệu local
-        await AsyncStorage.removeItem('user');
-        await AsyncStorage.removeItem('authToken');
-        await AsyncStorage.removeItem('refreshToken');
-      } catch (error) {
-        // Vẫn xóa dữ liệu local ngay cả khi API lỗi
-        console.log('Logout failed:', error);
-
-        apiCache = {};
-        await AsyncStorage.removeItem('user');
-        await AsyncStorage.removeItem('authToken');
-        await AsyncStorage.removeItem('refreshToken');
-        throw error;
-      }
-    },
-    register: async (name: string, email: string, password: string) => {
-      return await fetchApi('/users/register', 'POST', { name, email, password }, false, false);
-    },
-    refresh: async () => {
-      return await fetchApi('/auth/refresh', 'POST', undefined, true, false);
-    }
-  },
+  auth,
 
   // Products
   products: {
@@ -510,7 +490,7 @@ export const api = {
         ...(category_id && { category_id: category_id.toString() })
       });
       
-      const data = await fetchApi(`/products/admin/list?${queryParams}`, 'GET', undefined, false, !forceRefresh);
+      const data = await fetchApi(`/products/admin/list?${queryParams}`, 'GET', undefined, true, !forceRefresh);
       return {
         products: data.products || [],
         pagination: {
@@ -709,7 +689,7 @@ export const api = {
     }
   },
 
-    // Sliders
+  // Sliders
   getSliders: async () => {
     try {
       const response = await fetchApi('/sliders', 'GET', undefined, false, true);      
@@ -717,17 +697,6 @@ export const api = {
     } catch (error) {
       console.error('Error fetching sliders:', error);
       return [];
-    }
-  },
-
-    // Banner Popup
-  getBannerPopup: async () => {
-    try {
-      const response = await fetchApi('/banners/one', 'GET', undefined, false, true);
-      return response || null;
-    } catch (error) {
-      console.error('Error fetching banner popup:', error);
-      return null;
     }
   },
 

@@ -9,36 +9,44 @@ import {
   RefreshControl,
 } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
-import { Product } from '../../contexts/CartContext';
 import { api } from '../../services/api';
 import { useNavigation, useLocalSearchParams } from 'expo-router';
 import StyleSheet from '../../styles/StyleSheet';
 import { scale, verticalScale } from '../../styles/responsive';
 import CategoryItem from '../../components/CategoryItem';
 import SectionHeader from '../../components/SectionHeader';
-import CarouselBanner from '../../components/CarouselBanner';
 import ProductCardResponsive from '../../components/ProductCardResponsive';
 import { CustomerLayout } from '../../layouts';
 import Pagination from '../../components/ui/Pagination';
 import Footer from '../../components/Footer';
 
-// Types
+// Update Product type to match new structure
+interface Product {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  category_id: number;
+  colors: Array<{
+    id: number;
+    color_name: string;
+    color_code: string;
+    image: string;
+    colorSizes: Array<{
+      id: number;
+      size: {
+        id: number;
+        size_name: string;
+      }
+    }>
+  }>;
+}
+
 interface Category {
   id: string;
   name: string;
   image?: string;
 }
-
-interface ProductWithCategory extends Product {
-  category_name?: string;
-}
-
-// Banner data for carousel
-const banners = [
-  { id: '1', image: require('../../assets/images/banner.jpg') },
-  { id: '2', image: require('../../assets/images/banner.jpg') },
-  { id: '3', image: require('../../assets/images/banner.jpg') }
-];
 
 export default function ProductsScreen() {
   const { colors } = useTheme();
@@ -46,7 +54,7 @@ export default function ProductsScreen() {
   const { activateSearch } = useLocalSearchParams();
   
   const [searchQuery, setSearchQuery] = useState('');
-  const [products, setProducts] = useState<ProductWithCategory[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
@@ -64,18 +72,15 @@ export default function ProductsScreen() {
     }
   }, [activateSearch]);
   
-  // Transform AdminProduct to Product
-  const transformProduct = useCallback((adminProduct: any): ProductWithCategory => {
+  // Transform product data
+  const transformProduct = useCallback((adminProduct: any): Product => {
     return {
-      id: adminProduct.id,
+      id: adminProduct.id.toString(),
       name: adminProduct.name,
-      price: Number(adminProduct.price),
-      image: adminProduct.image,
       description: adminProduct.description,
-      category: typeof adminProduct.category === 'object' ? adminProduct.category.name : adminProduct.category,
-      category_id: adminProduct.category_id.toString(),
-      category_name: typeof adminProduct.category === 'object' ? adminProduct.category.name : undefined,
-      discount: adminProduct.discount
+      price: Number(adminProduct.price),
+      category_id: adminProduct.category_id,
+      colors: adminProduct.colors || []
     };
   }, []);
   
@@ -103,7 +108,6 @@ export default function ProductsScreen() {
       
       const transformedProducts = response.products.map(transformProduct);
       
-      // Always set new products, don't append
       setProducts(transformedProducts);
       setTotalProducts(response.pagination.totalItems);
       
@@ -113,7 +117,7 @@ export default function ProductsScreen() {
       setIsLoading(false);
       setIsLoadingMore(false);
     }
-  }, [searchQuery, transformProduct]);
+  }, [searchQuery, transformProduct, selectedCategory]);
   
   // Initial data fetch
   useEffect(() => {
@@ -311,10 +315,8 @@ export default function ProductsScreen() {
                 id={item.id}
                 name={item.name}
                 price={item.price}
-                image={item.image}
-                discount={item.discount}
+                colors={item.colors}
                 onPress={handleProductPress}
-                onAddToCart={handleAddToCart}
               />
             ))}
           </View>

@@ -9,44 +9,41 @@ import {
   StatusBar,
   Alert,
   Image,
-  KeyboardAvoidingView,
-  Platform,
+  ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
-import Button from '../components/ui/Button';
+import { scale } from '../styles/responsive';
+import LogoFdaily from '../assets/images/Logo-Fdaily.png';
 
 export default function LoginScreen() {
   const router = useRouter();
   const { colors, theme } = useTheme();
   const { login, isAuthenticated, isLoading: authLoading } = useAuth();
   
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
-  // Redirect to admin dashboard if already authenticated
-  useEffect(() => {
-    if (isAuthenticated) {
-      router.replace('/admin');
-    }
-  }, [isAuthenticated, router]);
-  
   const handleLogin = async () => {
-    if (!username.trim() || !password.trim()) {
-      Alert.alert('Thông báo', 'Vui lòng nhập tên đăng nhập và mật khẩu');
+    if (!email.trim() || !password.trim()) {
+      Alert.alert('Thông báo', 'Vui lòng nhập email và mật khẩu');
       return;
     }
     
     try {
       setIsLoading(true);
-      const result = await login(username, password);
+      const result = await login(email, password);
       
       if (!result.success) {
-        Alert.alert('Đăng nhập thất bại', result.message || 'Tên đăng nhập hoặc mật khẩu không đúng');
+        Alert.alert('Đăng nhập thất bại', result.message || 'Email hoặc mật khẩu không đúng');
+      } else {
+        Alert.alert('Thành công', 'Đăng nhập thành công!', [
+          { text: 'OK', onPress: () => router.push('/') }
+        ]);
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -54,14 +51,6 @@ export default function LoginScreen() {
     } finally {
       setIsLoading(false);
     }
-  };
-  
-  const handleBack = () => {
-    router.replace('/');
-  };
-  
-  const toggleShowPassword = () => {
-    setShowPassword(!showPassword);
   };
   
   if (authLoading) {
@@ -78,101 +67,177 @@ export default function LoginScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} />
-      
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={[styles.backButton, { backgroundColor: colors.cardBackground }]} 
-          onPress={handleBack}
-        >
-          <Ionicons name="arrow-back" size={22} color={colors.text} />
+      <View style={styles.headerBack}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
       </View>
-      
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardAvoidingView}
-      >
-        <View style={styles.content}>
-          {/* Logo */}
-          <View style={styles.logoContainer}>
-            <Image 
-              source={require('../assets/images/react-logo.png')} 
-              style={styles.logo}
-              resizeMode="contain"
-            />
-            <Text style={[styles.appName, { color: colors.primary }]}>Milk Shop</Text>
-            <Text style={[styles.adminText, { color: colors.text }]}>Đăng nhập Admin</Text>
+      <ScrollView contentContainerStyle={styles.scrollViewContent} keyboardShouldPersistTaps="handled">
+        <View style={styles.centeredContainer}>
+        <TouchableOpacity onPress={() => router.push('/')}> 
+            <Image source={LogoFdaily} style={styles.logo} resizeMode="contain" />
+          </TouchableOpacity>
+          <View style={styles.titleBlock}>
+            <Text style={[styles.title, { color: colors.text }]}>Đăng Nhập</Text>
+            <View style={styles.switchRow}>
+              <Text style={styles.switchText}>Bạn chưa có tài khoản? </Text>
+              <TouchableOpacity onPress={() => router.push('/register')}>
+                <Text style={[styles.switchLink, { color: colors.primary }]}>Đăng Ký</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-          
-          {/* Login Form */}
           <View style={styles.formContainer}>
-            <View 
-              style={[
-                styles.inputContainer, 
-                { backgroundColor: colors.cardBackground, borderColor: colors.separator }
-              ]}
-            >
-              <Ionicons name="person-outline" size={20} color={colors.gray} style={styles.inputIcon} />
+            {/* Email Input */}
+            <View style={styles.inputContainer}>
               <TextInput
-                placeholder="Tên đăng nhập"
-                value={username}
-                onChangeText={setUsername}
-                style={[styles.input, { color: colors.text }]}
-                placeholderTextColor={colors.gray}
+                placeholder="Email"
+                value={email}
+                onChangeText={setEmail}
+                style={[styles.input, styles.inputBorder, { backgroundColor: colors.cardBackground, color: colors.text }]}
+                placeholderTextColor={colors.placeholder}
                 autoCapitalize="none"
+                keyboardType="email-address"
               />
             </View>
             
-            <View 
-              style={[
-                styles.inputContainer, 
-                { backgroundColor: colors.cardBackground, borderColor: colors.separator }
-              ]}
-            >
-              <Ionicons name="lock-closed-outline" size={20} color={colors.gray} style={styles.inputIcon} />
-              <TextInput
-                placeholder="Mật khẩu"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-                style={[styles.input, { color: colors.text }]}
-                placeholderTextColor={colors.gray}
-              />
-              <TouchableOpacity onPress={toggleShowPassword} style={styles.toggleButton}>
-                <Ionicons 
-                  name={showPassword ? 'eye-off-outline' : 'eye-outline'} 
-                  size={20} 
-                  color={colors.gray} 
+            {/* Password Input */}
+            <View style={styles.inputContainer}>
+              <View style={styles.passwordContainer}>
+                <TextInput
+                  placeholder="Mật khẩu"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                  style={[styles.passwordInput, styles.inputBorder, { backgroundColor: colors.cardBackground, color: colors.text }]}
+                  placeholderTextColor={colors.placeholder}
                 />
+                <TouchableOpacity 
+                  style={styles.eyeIcon}
+                  onPress={() => setShowPassword(!showPassword)}
+                >
+                  <Ionicons 
+                    name={showPassword ? 'eye-off-outline' : 'eye-outline'} 
+                    size={24} 
+                    color={colors.text} 
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Remember Password Checkbox */}
+            <View style={styles.checkboxContainer}>
+              <TouchableOpacity style={styles.checkbox}>
+                <Ionicons name="checkbox-outline" size={20} color={colors.primary} />
+                <Text style={[styles.checkboxText, { color: colors.text }]}>Ghi nhớ mật khẩu?</Text>
+              </TouchableOpacity>
+              <TouchableOpacity>
+                <Text style={[styles.forgotPassword, { color: colors.primary }]}>Quên mật khẩu?</Text>
               </TouchableOpacity>
             </View>
             
-            <Button
-              title="Đăng nhập"
+            {/* Login Button */}
+            <TouchableOpacity
+              style={[styles.loginButton, styles.inputBorder, { backgroundColor: colors.primary }]}
               onPress={handleLogin}
-              variant="primary"
-              size="large"
-              fullWidth
-              loading={isLoading}
-              style={styles.loginButton}
-            />
-            
-            <TouchableOpacity onPress={handleBack} style={styles.backToShopButton}>
-              <Text style={[styles.backToShopText, { color: colors.text }]}>
-                Quay lại cửa hàng
-              </Text>
+              disabled={isLoading}
+            >
+              <Text style={styles.loginButtonText}>Đăng nhập</Text>
+            </TouchableOpacity>
+
+            {/* Google Login */}
+            <TouchableOpacity
+              style={[styles.googleButton, styles.inputBorder, { backgroundColor: colors.cardBackground }]}
+              onPress={() => {/* Handle Google login */}}
+            >
+              <View style={styles.googleIconContainer}>
+                <Text style={styles.googleIconText}>G</Text>
+              </View>
+              <Text style={[styles.googleButtonText, { color: colors.text }]}>Đăng nhập với Google</Text>
             </TouchableOpacity>
           </View>
         </View>
-      </KeyboardAvoidingView>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  container: { flex: 1 },
+  scrollViewContent: { flexGrow: 1, paddingHorizontal: scale(16) },
+  centeredContainer: { flex: 1, alignItems: 'center', paddingVertical: scale(24) },
+  logo: { width: scale(120), height: scale(40), marginBottom: scale(8) },
+  titleBlock: { width: '100%', maxWidth: scale(400), alignSelf: 'flex-start', marginBottom: scale(16) },
+  title: { fontSize: scale(24), fontWeight: '600', marginBottom: scale(8), textAlign: 'left' },
+  switchRow: { flexDirection: 'row', alignItems: 'center', marginBottom: scale(8) },
+  switchText: { fontSize: scale(14), color: '#222', textAlign: 'left' },
+  switchLink: { fontSize: scale(14), fontWeight: '600', textAlign: 'left' },
+  formContainer: { width: '100%', maxWidth: scale(400), alignSelf: 'center', gap: scale(16) },
+  inputContainer: {
+    gap: scale(4),
+  },
+  input: { height: scale(48), borderRadius: scale(8), paddingHorizontal: scale(16), fontSize: scale(16), marginBottom: scale(8) },
+  inputBorder: { borderWidth: 1, borderColor: '#d1d5db' },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  passwordInput: {
     flex: 1,
+    height: scale(48),
+    borderRadius: scale(8),
+    paddingHorizontal: scale(16),
+    fontSize: scale(16),
+  },
+  eyeIcon: {
+    position: 'absolute',
+    right: scale(16),
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  checkbox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scale(8),
+  },
+  checkboxText: {
+    fontSize: scale(14),
+  },
+  forgotPassword: {
+    fontSize: scale(14),
+  },
+  loginButton: {
+    height: scale(48),
+    borderRadius: scale(8),
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: scale(8),
+  },
+  loginButtonText: {
+    color: 'white',
+    fontSize: scale(16),
+    fontWeight: '600',
+  },
+  googleButton: { height: scale(48), borderRadius: scale(8), flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: scale(8) },
+  googleIconContainer: {
+    width: scale(24),
+    height: scale(24),
+    borderRadius: scale(12),
+    backgroundColor: '#4285F4',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: scale(8),
+  },
+  googleIconText: {
+    color: 'white',
+    fontSize: scale(16),
+    fontWeight: 'bold',
+  },
+  googleButtonText: {
+    fontSize: scale(16),
+    fontWeight: '500',
   },
   loadingContainer: {
     flex: 1,
@@ -180,81 +245,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    fontSize: 16,
+    fontSize: scale(16),
   },
-  header: {
-    position: 'absolute',
-    top: 16,
-    left: 16,
-    zIndex: 10,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  keyboardAvoidingView: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: 24,
-  },
-  logoContainer: {
-    alignItems: 'center',
-    marginBottom: 40,
-  },
-  logo: {
-    width: 80,
-    height: 80,
-    marginBottom: 16,
-  },
-  appName: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  adminText: {
-    fontSize: 16,
-  },
-  formContainer: {
-    width: '100%',
-  },
-  inputContainer: {
+  headerBack: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 8,
-    marginBottom: 16,
-    height: 50,
+    padding: scale(16),
   },
-  inputIcon: {
-    marginHorizontal: 12,
-  },
-  input: {
-    flex: 1,
-    height: '100%',
-    fontSize: 16,
-  },
-  toggleButton: {
-    padding: 12,
-  },
-  loginButton: {
-    marginTop: 16,
-  },
-  backToShopButton: {
-    marginTop: 24,
-    alignItems: 'center',
-  },
-  backToShopText: {
-    fontSize: 14,
+  backButton: {
+    padding: scale(8),
   },
 }); 

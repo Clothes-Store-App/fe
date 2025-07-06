@@ -73,4 +73,12 @@ export const calculateDiscount = (originalPrice: number, discountedPrice: number
   if (!originalPrice || !discountedPrice || originalPrice <= 0) return 0;
   const discount = ((originalPrice - discountedPrice) / originalPrice) * 100;
   return Math.round(discount);
+};
+
+export const formatPrice = (value: number) => {
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+    minimumFractionDigits: 0
+  }).format(value);
 }; 

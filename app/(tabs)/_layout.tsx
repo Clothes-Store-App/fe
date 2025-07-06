@@ -76,7 +76,7 @@ export default function TabLayout() {
         listeners={({ navigation }) => ({
           tabPress: (e) => {
             e.preventDefault();
-            navigation.navigate(isAuthenticated ? 'admin' : 'login');
+            navigation.navigate(isAuthenticated ? 'account' : 'login');
           },
         })}
       />

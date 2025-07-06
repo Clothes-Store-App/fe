@@ -7,6 +7,7 @@ type User = {
   name: string;
   email: string;
   role: string;
+  phone?: string;
 };
 
 type AuthContextType = {
@@ -80,9 +81,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(true);
       
       const response = await api.auth.login(email, password);
+      console.log('Login response:', response);
       
       if (response && response.user) {
+        console.log('Setting user data:', response.user);
         setUser(response.user);
+        
+        // Lưu user data vào AsyncStorage
+        await AsyncStorage.setItem('user', JSON.stringify(response.user));
         
         // Lưu refreshToken nếu có
         if (response.refreshToken) {
