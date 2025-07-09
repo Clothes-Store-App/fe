@@ -132,12 +132,12 @@ function AdminLayout() {
               </button>
               <Link to={ROUTES.HOME} className="flex items-center ml-2 md:mr-24">
                 <img
-                  src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQKT57puJ1NwlHaibn56A34UFY2OKRTd7TtgQ&s"
+                  src=""
                   className="h-10 w-10 rounded-full object-cover mr-3"
-                  alt="Logo"
+                  alt="Logo FDaily"
                 />
                 <span className="self-center text-xl font-semibold text-gray-800 whitespace-nowrap">
-                  Mẹ xíu
+                  FDaily Clothes
                 </span>
               </Link>
             </div>
