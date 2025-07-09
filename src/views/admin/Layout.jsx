@@ -5,23 +5,23 @@ import { selectCurrentUser, selectIsAuthenticated, selectIsAdmin, logout } from 
 import { ROUTES } from "../../constants";
 import { useLogoutMutation } from "../../services/api";
 import { handleLogout as handleLogoutUtil } from "../../utils/auth";
-import socketService from "../../services/socket.service";
+import LogoFdaily from "../../styles/Logo-Fdaily.png";
 
-// Màu sắc mới
+// Màu sắc mới - xanh đen
 const THEME = {
-  primary: '#fdf2f8',    // Pink 50
-  secondary: '#fbcfe8',  // Pink 200
-  accent: '#f472b6',     // Pink 400
+  primary: '#f0fdf4',    // Green 50
+  secondary: '#dcfce7',  // Green 100
+  accent: '#22c55e',     // Green 500
+  dark: '#14532d',      // Green 900
   text: {
     primary: '#1f2937',  // Gray 800
     secondary: '#4b5563', // Gray 600
   },
-  border: '#fce7f3',     // Pink 100
+  border: '#bbf7d0',     // Green 200
 };
 
 function AdminLayout() {
   const [logoutMutation, { isLoading }] = useLogoutMutation();
-  const [notifications, setNotifications] = useState([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const currentUser = useSelector(selectCurrentUser);
   const isAuthenticated = useSelector(selectIsAuthenticated);
@@ -30,32 +30,7 @@ function AdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Socket connection và notification handling
   useEffect(() => {
-    if (!isAuthenticated || !isAdmin) return;
-
-    // Kết nối socket
-    socketService.connect();
-
-    // Lắng nghe thông báo mới
-    const handleNotification = (notification) => {
-      setNotifications(prev => [notification, ...prev]);
-      // Phát âm thông báo
-      const audio = new Audio('/notification-sound.mp3');
-      audio.play().catch(error => console.error('Error playing sound:', error));
-    };
-
-    socketService.onNotification(handleNotification);
-
-    // Cleanup khi component unmount
-    return () => {
-      socketService.offNotification(handleNotification);
-      socketService.disconnect();
-    };
-  }, [isAuthenticated, isAdmin]);
-
-  useEffect(() => {
-
     if (!isAuthenticated) {
       console.error('User not authenticated, redirecting to admin login...');
       navigate(ROUTES.ADMIN);
@@ -81,23 +56,6 @@ function AdminLayout() {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
-  // Clear notifications
-  const handleClearNotifications = () => {
-    setNotifications([]);
-  };
-
-  // Format time for notifications
-  const formatTime = (timestamp) => {
-    const date = new Date(timestamp);
-    return date.toLocaleString('vi-VN', {
-      hour: '2-digit',
-      minute: '2-digit',
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    });
-  };
-
   // If not authenticated or not admin, don't render anything
   if (!isAuthenticated || !isAdmin) {
     return null;
@@ -106,14 +64,14 @@ function AdminLayout() {
   return (
     <div className="min-h-screen bg-white">
       {/* Navbar */}
-      <nav className="fixed top-0 left-0 z-50 w-full bg-white border-b border-pink-100">
+      <nav className="fixed top-0 left-0 z-50 w-full bg-white border-b border-green-200">
         <div className="px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <button
                 onClick={toggleSidebar}
                 type="button"
-                className="inline-flex items-center p-2 text-sm text-gray-500 rounded-lg md:hidden hover:bg-pink-50 focus:outline-none focus:ring-2 focus:ring-pink-200"
+                className="inline-flex items-center p-2 text-sm text-gray-500 rounded-lg md:hidden hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-200"
               >
                 <span className="sr-only">Toggle sidebar</span>
                 <svg
@@ -132,8 +90,8 @@ function AdminLayout() {
               </button>
               <Link to={ROUTES.HOME} className="flex items-center ml-2 md:mr-24">
                 <img
-                  src=""
-                  className="h-10 w-10 rounded-full object-cover mr-3"
+                  src={LogoFdaily}
+                  className="h-10 w-auto object-contain mr-3"
                   alt="Logo FDaily"
                 />
                 <span className="self-center text-xl font-semibold text-gray-800 whitespace-nowrap">
@@ -142,50 +100,9 @@ function AdminLayout() {
               </Link>
             </div>
             <div className="flex items-center gap-4">
-              {/* Notification Dropdown */}
-              <div className="relative">
-                <button
-                  onClick={() => setNotifications([])}
-                  className="relative p-2 text-gray-500 hover:bg-pink-50 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-200"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                  </svg>
-                  {notifications.length > 0 && (
-                    <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-pink-500 rounded-full">
-                      {notifications.length}
-                    </span>
-                  )}
-                </button>
-                {/* Notification Panel */}
-                {notifications.length > 0 && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg overflow-hidden border border-pink-100">
-                    <div className="p-3 border-b border-pink-100">
-                      <h3 className="text-sm font-semibold text-gray-800">Thông báo</h3>
-                    </div>
-                    <div className="max-h-96 overflow-y-auto">
-                      {notifications.map((notification, index) => (
-                        <div
-                          key={index}
-                          className="p-4 border-b border-pink-50 hover:bg-pink-50 cursor-pointer"
-                          onClick={() => {
-                            navigate(ROUTES.ADMIN_ORDERS);
-                            setNotifications([]);
-                          }}
-                        >
-                          <p className="text-sm text-gray-800">{notification.message}</p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {formatTime(notification.order.createdAt)}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
               <button
                 onClick={handleLogout}
-                className="px-4 py-2 text-sm text-gray-700 hover:bg-pink-50 rounded-lg"
+                className="px-4 py-2 text-sm text-gray-700 hover:bg-green-50 rounded-lg"
               >
                 Đăng xuất
               </button>
@@ -196,7 +113,7 @@ function AdminLayout() {
 
       {/* Sidebar */}
       <aside
-        className={`fixed left-0 z-40 w-64 h-screen transition-transform bg-white border-r border-pink-100 ${
+        className={`fixed left-0 z-40 w-64 h-screen transition-transform bg-white border-r border-green-200 ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } md:translate-x-0`}
         aria-label="Sidebar"
@@ -207,12 +124,12 @@ function AdminLayout() {
             <li>
               <Link
                 to={ROUTES.ADMIN_DASHBOARD}
-                className={`flex items-center p-2 text-gray-800 rounded-lg hover:bg-pink-50 group ${
-                  isActive(ROUTES.ADMIN_DASHBOARD) ? 'bg-pink-50' : ''
+                className={`flex items-center p-2 text-gray-800 rounded-lg hover:bg-green-50 group ${
+                  isActive(ROUTES.ADMIN_DASHBOARD) ? 'bg-green-50' : ''
                 }`}
               >
                 <svg
-                  className="w-5 h-5 text-gray-500 transition duration-75 group-hover:text-pink-400"
+                  className="w-5 h-5 text-gray-500 transition duration-75 group-hover:text-green-600"
                   aria-hidden="true"
                   xmlns="http://www.w3.org/2000/svg"
                   fill="currentColor"
@@ -227,12 +144,12 @@ function AdminLayout() {
             <li>
               <Link
                 to={ROUTES.ADMIN_CATEGORIES}
-                className={`flex items-center p-2 text-gray-800 rounded-lg hover:bg-pink-50 group ${
-                  isActive(ROUTES.ADMIN_CATEGORIES) ? 'bg-pink-50' : ''
+                className={`flex items-center p-2 text-gray-800 rounded-lg hover:bg-green-50 group ${
+                  isActive(ROUTES.ADMIN_CATEGORIES) ? 'bg-green-50' : ''
                 }`}
               >
                 <svg
-                  className="w-5 h-5 text-gray-500 transition duration-75 group-hover:text-pink-400"
+                  className="w-5 h-5 text-gray-500 transition duration-75 group-hover:text-green-600"
                   aria-hidden="true"
                   xmlns="http://www.w3.org/2000/svg"
                   fill="currentColor"
@@ -246,12 +163,12 @@ function AdminLayout() {
             <li>
               <Link
                 to="/admin/products"
-                className={`flex items-center p-2 text-gray-800 rounded-lg hover:bg-pink-50 group ${
-                  isActive('/admin/products') ? 'bg-pink-50' : ''
+                className={`flex items-center p-2 text-gray-800 rounded-lg hover:bg-green-50 group ${
+                  isActive('/admin/products') ? 'bg-green-50' : ''
                 }`}
               >
                 <svg
-                  className="w-5 h-5 text-gray-500 transition duration-75 group-hover:text-pink-400"
+                  className="w-5 h-5 text-gray-500 transition duration-75 group-hover:text-green-600"
                   aria-hidden="true"
                   xmlns="http://www.w3.org/2000/svg"
                   fill="currentColor"
@@ -265,12 +182,12 @@ function AdminLayout() {
             <li>
               <Link
                 to={ROUTES.ADMIN_ORDERS}
-                className={`flex items-center p-2 text-gray-800 rounded-lg hover:bg-pink-50 group ${
-                  isActive(ROUTES.ADMIN_ORDERS) ? 'bg-pink-50' : ''
+                className={`flex items-center p-2 text-gray-800 rounded-lg hover:bg-green-50 group ${
+                  isActive(ROUTES.ADMIN_ORDERS) ? 'bg-green-50' : ''
                 }`}
               >
                 <svg
-                  className="w-5 h-5 text-gray-500 transition duration-75 group-hover:text-pink-400"
+                  className="w-5 h-5 text-gray-500 transition duration-75 group-hover:text-green-600"
                   aria-hidden="true"
                   xmlns="http://www.w3.org/2000/svg"
                   fill="currentColor"
@@ -283,78 +200,61 @@ function AdminLayout() {
             </li>
             <li>
               <Link
-                to={ROUTES.ADMIN_VIDEOS}
-                className={`flex items-center p-2 text-gray-800 rounded-lg hover:bg-pink-50 group ${
-                  isActive(ROUTES.ADMIN_VIDEOS) ? 'bg-pink-50' : ''
+                to={ROUTES.ADMIN_POSTS}
+                className={`flex items-center p-2 text-gray-800 rounded-lg hover:bg-green-50 group ${
+                  isActive(ROUTES.ADMIN_POSTS) ? 'bg-green-50' : ''
                 }`}
               >
                 <svg
-                  className="w-5 h-5 text-gray-500 transition duration-75 group-hover:text-pink-400"
+                  className="w-5 h-5 text-gray-500 transition duration-75 group-hover:text-green-600"
                   aria-hidden="true"
                   xmlns="http://www.w3.org/2000/svg"
                   fill="currentColor"
-                  viewBox="0 0 24 24"
+                  viewBox="0 0 20 20"
                 >
-                  <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  <path d="M5 5V.13a2.96 2.96 0 0 0-1.293.749L.879 3.707A2.96 2.96 0 0 0 .13 5H5Z"/>
+                  <path d="M6.737 11.061a2.961 2.961 0 0 1 .81-1.515l6.117-6.116A4.839 4.839 0 0 1 16 2.141V2a1.97 1.97 0 0 0-1.933-2H7v5a2 2 0 0 1-2 2H0v11a1.969 1.969 0 0 0 1.933 2h12.134A1.97 1.97 0 0 0 16 18v-3.093l-1.546 1.546c-.413.413-.94.695-1.513.81l-3.4.679a2.947 2.947 0 0 1-1.85-.227 2.96 2.96 0 0 1-1.635-3.257l.681-3.397Z"/>
+                  <path d="M8.961 16a.93.93 0 0 0 .189-.019l3.4-.679a.961.961 0 0 0 .49-.263l6.118-6.117a2.884 2.884 0 0 0-4.079-4.078l-6.117 6.117a.96.96 0 0 0-.263.491l-.679 3.4A.961.961 0 0 0 8.961 16Zm7.477-9.8a.958.958 0 0 1 .68-.281.961.961 0 0 1 .682 1.644l-.315.315-1.36-1.36.313-.318Zm-5.911 5.911 4.236-4.236 1.359 1.359-4.236 4.237-1.7.339.341-1.699Z"/>
                 </svg>
-                <span className="ml-3">Videos</span>
+                <span className="ml-3">Bài viết</span>
               </Link>
             </li>
             <li>
               <Link
                 to={ROUTES.ADMIN_SLIDERS}
-                className={`flex items-center p-2 text-gray-800 rounded-lg hover:bg-pink-50 group ${
-                  isActive(ROUTES.ADMIN_SLIDERS) ? 'bg-pink-50' : ''
+                className={`flex items-center p-2 text-gray-800 rounded-lg hover:bg-green-50 group ${
+                  isActive(ROUTES.ADMIN_SLIDERS) ? 'bg-green-50' : ''
                 }`}
               >
                 <svg
-                  className="w-5 h-5 text-gray-500 transition duration-75 group-hover:text-pink-400"
+                  className="w-5 h-5 text-gray-500 transition duration-75 group-hover:text-green-600"
                   aria-hidden="true"
                   xmlns="http://www.w3.org/2000/svg"
                   fill="currentColor"
-                  viewBox="0 0 24 24"
+                  viewBox="0 0 20 20"
                 >
-                  <path d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6" />
+                  <path d="M18 7.5h-.423l-.452-1.09.3-.3a1.5 1.5 0 0 0 0-2.121L16.01 2.575a1.5 1.5 0 0 0-2.121 0l-.3.3-1.089-.452V2A1.5 1.5 0 0 0 11 .5H9A1.5 1.5 0 0 0 7.5 2v.423l-1.09.452-.3-.3a1.5 1.5 0 0 0-2.121 0L2.576 3.99a1.5 1.5 0 0 0 0 2.121l.3.3L2.423 7.5H2A1.5 1.5 0 0 0 .5 9v2A1.5 1.5 0 0 0 2 12.5h.423l.452 1.09-.3.3a1.5 1.5 0 0 0 0 2.121l1.415 1.413a1.5 1.5 0 0 0 2.121 0l.3-.3 1.09.452V18A1.5 1.5 0 0 0 9 19.5h2a1.5 1.5 0 0 0 1.5-1.5v-.423l1.09-.452.3.3a1.5 1.5 0 0 0 2.121 0l1.415-1.414a1.5 1.5 0 0 0 0-2.121l-.3-.3.452-1.09H18a1.5 1.5 0 0 0 1.5-1.5V9A1.5 1.5 0 0 0 18 7.5Zm-8 6a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z"/>
                 </svg>
-                <span className="ml-3">Sliders</span>
+                <span className="ml-3">Slider</span>
               </Link>
             </li>
             <li>
               <Link
                 to={ROUTES.ADMIN_BANNERS}
-                className={`flex items-center p-2 text-gray-800 rounded-lg hover:bg-pink-50 group ${
-                  isActive(ROUTES.ADMIN_BANNERS) ? 'bg-pink-50' : ''
+                className={`flex items-center p-2 text-gray-800 rounded-lg hover:bg-green-50 group ${
+                  isActive(ROUTES.ADMIN_BANNERS) ? 'bg-green-50' : ''
                 }`}
               >
                 <svg
-                  className="w-5 h-5 text-gray-500 transition duration-75 group-hover:text-pink-400"
+                  className="w-5 h-5 text-gray-500 transition duration-75 group-hover:text-green-600"
                   aria-hidden="true"
                   xmlns="http://www.w3.org/2000/svg"
                   fill="currentColor"
-                  viewBox="0 0 24 24"
+                  viewBox="0 0 20 20"
                 >
-                  <path d="M4 5h16v2H4V5zm0 5h16v2H4v-2zm0 5h16v2H4v-2z"/>
+                  <path d="M18 5h-.7c.229-.467.349-.98.351-1.5a3.5 3.5 0 0 0-3.5-3.5c-1.717 0-3.215 1.2-4.331 2.481C8.4.842 6.949 0 5.5 0A3.5 3.5 0 0 0 2 3.5c.003.52.123 1.033.351 1.5H2a2 2 0 0 0-2 2v3a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1V7a2 2 0 0 0-2-2ZM8.058 5H5.5a1.5 1.5 0 0 1 0-3c.9 0 2 .754 3.092 2.122-.219.337-.392.635-.534.878Zm6.1 0h-3.742c.933-1.368 2.371-3 3.739-3a1.5 1.5 0 0 1 0 3h.003ZM11 13H9v7h2v-7Zm-4 0H2v5a2 2 0 0 0 2 2h3v-7Zm6 0v7h3a2 2 0 0 0 2-2v-5h-5Z"/>
                 </svg>
-                <span className="ml-3">Banners</span>
-              </Link>
-            </li>
-            <li>
-              <Link
-                to={ROUTES.ADMIN_POSTS}
-                className={`flex items-center p-2 text-gray-800 rounded-lg hover:bg-pink-50 group ${
-                  isActive(ROUTES.ADMIN_POSTS) ? 'bg-pink-50' : ''
-                }`}
-              >
-                <svg
-                  className="w-5 h-5 text-gray-500 transition duration-75 group-hover:text-pink-400"
-                  aria-hidden="true"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/>
-                </svg>
-                <span className="ml-3">Bài viết</span>
+                <span className="ml-3">Banner</span>
               </Link>
             </li>
           </ul>
@@ -362,10 +262,10 @@ function AdminLayout() {
       </aside>
 
       {/* Main content */}
-      <div className={`p-4 md:ml-64 min-h-screen pt-20 transition-all duration-300 ${
-        !isSidebarOpen ? 'md:ml-0' : ''
-      }`}>
-        <Outlet />
+      <div className={`p-4 ${isSidebarOpen ? 'md:ml-64' : ''}`}>
+        <div className="mt-14">
+          <Outlet />
+        </div>
       </div>
     </div>
   );

@@ -212,7 +212,7 @@ const CategoryList = () => {
         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
           <button
             onClick={() => handleEdit(category)}
-            className="inline-flex items-center justify-center w-8 h-8 mr-2 text-pink-500 bg-pink-50 rounded-lg border border-pink-200 hover:bg-pink-100 hover:text-pink-600 hover:border-pink-300 transition-colors duration-150"
+            className="inline-flex items-center justify-center w-8 h-8 mr-2 text-green-500 bg-green-50 rounded-lg border border-green-200 hover:bg-green-100 hover:text-green-600 hover:border-green-300 transition-colors duration-150"
             title="Sửa danh mục"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -234,10 +234,10 @@ const CategoryList = () => {
   }, [categories, handleEdit, handleDelete]);
   
   return (
-    <div className="w-full bg-pink-50/30 min-h-screen -mt-4 -mx-4 p-8">
+    <div className="w-full bg-green-50/30 min-h-screen -mt-4 -mx-4 p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header Section */}
-        <div className="bg-white rounded-xl shadow-sm border border-pink-100 p-6 mb-6">
+        <div className="bg-white rounded-xl shadow-sm border border-green-100 p-6 mb-6">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-800">Quản lý danh mục</h1>
@@ -245,7 +245,7 @@ const CategoryList = () => {
             </div>
             <button 
               onClick={handleAdd}
-              className="inline-flex items-center px-4 py-2 bg-pink-500 hover:bg-pink-600 text-white text-sm font-medium rounded-lg transition-colors duration-150 ease-in-out"
+              className="inline-flex items-center px-4 py-2 bg-green-500 hover:bg-green-600 text-white text-sm font-medium rounded-lg transition-colors duration-150 ease-in-out"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -262,11 +262,11 @@ const CategoryList = () => {
                 placeholder="Tìm kiếm danh mục..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-pink-500 focus:border-pink-500"
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
               />
               <button
                 type="submit"
-                className="px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors duration-150"
+                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-150"
               >
                 Tìm kiếm
               </button>
@@ -275,10 +275,10 @@ const CategoryList = () => {
         </div>
 
         {/* Content Section */}
-        <div className="bg-white rounded-xl shadow-sm border border-pink-100 overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm border border-green-100 overflow-hidden">
           {isLoading ? (
             <div className="flex items-center justify-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
             </div>
           ) : isError ? (
             <div className="flex items-center justify-center h-64">
@@ -356,7 +356,7 @@ const CategoryList = () => {
                         id="name"
                         value={newCategoryName}
                         onChange={(e) => setNewCategoryName(e.target.value)}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-pink-500 focus:border-pink-500 sm:text-sm"
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
                         placeholder="Nhập tên danh mục"
                       />
                     </div>
@@ -388,7 +388,7 @@ const CategoryList = () => {
                         <button
                           type="button"
                           onClick={() => fileInputRef.current?.click()}
-                          className="ml-4 bg-white py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
+                          className="ml-4 bg-white py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                         >
                           {imagePreview ? 'Thay đổi ảnh' : 'Chọn ảnh'}
                         </button>
@@ -402,7 +402,7 @@ const CategoryList = () => {
                   type="button"
                   onClick={submitAddCategory}
                   disabled={isSubmitting}
-                  className={`w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-pink-600 text-base font-medium text-white hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 sm:ml-3 sm:w-auto sm:text-sm ${isSubmitting ? 'opacity-75 cursor-not-allowed' : ''}`}
+                  className={`w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:ml-3 sm:w-auto sm:text-sm ${isSubmitting ? 'opacity-75 cursor-not-allowed' : ''}`}
                 >
                   {isSubmitting ? 'Đang xử lý...' : 'Thêm mới'}
                 </button>
@@ -412,7 +412,7 @@ const CategoryList = () => {
                     setIsAddModalOpen(false);
                     resetForm();
                   }}
-                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
                 >
                   Hủy
                 </button>
@@ -447,7 +447,7 @@ const CategoryList = () => {
                         id="edit-name"
                         value={newCategoryName}
                         onChange={(e) => setNewCategoryName(e.target.value)}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-pink-500 focus:border-pink-500 sm:text-sm"
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
                         placeholder="Nhập tên danh mục"
                       />
                     </div>
@@ -479,7 +479,7 @@ const CategoryList = () => {
                         <button
                           type="button"
                           onClick={() => fileInputRef.current?.click()}
-                          className="ml-4 bg-white py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
+                          className="ml-4 bg-white py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                         >
                           {imagePreview ? 'Thay đổi ảnh' : 'Chọn ảnh'}
                         </button>
@@ -493,7 +493,7 @@ const CategoryList = () => {
                   type="button"
                   onClick={submitEditCategory}
                   disabled={isSubmitting}
-                  className={`w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-pink-600 text-base font-medium text-white hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 sm:ml-3 sm:w-auto sm:text-sm ${isSubmitting ? 'opacity-75 cursor-not-allowed' : ''}`}
+                  className={`w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:ml-3 sm:w-auto sm:text-sm ${isSubmitting ? 'opacity-75 cursor-not-allowed' : ''}`}
                 >
                   {isSubmitting ? 'Đang xử lý...' : 'Cập nhật'}
                 </button>
@@ -503,7 +503,7 @@ const CategoryList = () => {
                     setIsEditModalOpen(false);
                     resetForm();
                   }}
-                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
                 >
                   Hủy
                 </button>
@@ -552,7 +552,7 @@ const CategoryList = () => {
                 <button
                   type="button"
                   onClick={() => setIsDeleteModalOpen(false)}
-                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
                 >
                   Hủy
                 </button>
