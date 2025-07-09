@@ -109,11 +109,15 @@ const ProductList = () => {
       <tr key={product.id} className="hover:bg-gray-50 transition-colors duration-150">
         <td className="px-6 py-4 whitespace-nowrap">
           <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100">
-            {product.image ? (
+            {product.colors && product.colors[0]?.image ? (
               <img 
-                src={product.image} 
+                src={product.colors[0].image} 
                 alt={product.name}
-                className="w-full h-full object-contain"
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = 'https://placehold.co/100x100?text=No+Image';
+                }}
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
@@ -126,19 +130,22 @@ const ProductList = () => {
         </td>
         <td className="px-6 py-4 whitespace-nowrap">
           <div className="text-sm font-medium text-gray-900">{product.name}</div>
+          <div className="text-xs text-gray-500 mt-1">
+            {product.colors?.length || 0} màu sắc
+          </div>
         </td>
         <td className="px-6 py-4 whitespace-nowrap">
           <div className="text-sm text-gray-900">{formatPrice(product.price)}</div>
         </td>
         <td className="px-6 py-4 whitespace-nowrap">
-          <span className="px-2 py-1 text-xs font-medium text-pink-700 bg-pink-100 rounded-full">
+          <span className="px-2 py-1 text-xs font-medium text-green-700 bg-green-100 rounded-full">
             {getCategoryName(product.category_id)}
           </span>
         </td>
         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
           <Link
             to={`/admin/products/edit/${product.id}`}
-            className="inline-flex items-center justify-center w-8 h-8 mr-2 text-pink-500 bg-pink-50 rounded-lg border border-pink-200 hover:bg-pink-100 hover:text-pink-600 hover:border-pink-300 transition-colors duration-150"
+            className="inline-flex items-center justify-center w-8 h-8 mr-2 text-green-500 bg-green-50 rounded-lg border border-green-200 hover:bg-green-100 hover:text-green-600 hover:border-green-300 transition-colors duration-150"
             title="Sửa sản phẩm"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -160,10 +167,10 @@ const ProductList = () => {
   }, [productList, formatPrice, getCategoryName, handleDelete]);
 
   return (
-    <div className="w-full bg-pink-50/30 min-h-screen -mt-4 -mx-4 p-4 sm:p-8">
+    <div className="w-full bg-green-50/30 min-h-screen -mt-4 -mx-4 p-4 sm:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header Section */}
-        <div className="bg-white rounded-xl shadow-sm border border-pink-100 p-4 sm:p-6 mb-4 sm:mb-6">
+        <div className="bg-white rounded-xl shadow-sm border border-green-100 p-4 sm:p-6 mb-4 sm:mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Quản lý sản phẩm</h1>
@@ -171,7 +178,7 @@ const ProductList = () => {
             </div>
             <Link
               to="/admin/products/add"
-              className="inline-flex items-center justify-center px-4 py-2 bg-pink-500 hover:bg-pink-600 text-white text-sm font-medium rounded-lg transition-colors duration-150 ease-in-out w-full sm:w-auto"
+              className="inline-flex items-center justify-center px-4 py-2 bg-green-500 hover:bg-green-600 text-white text-sm font-medium rounded-lg transition-colors duration-150 ease-in-out w-full sm:w-auto"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -188,11 +195,11 @@ const ProductList = () => {
                 placeholder="Tìm kiếm sản phẩm..."
                 value={searchTerm}
                 onChange={handleSearchChange}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-pink-500 focus:border-pink-500 text-sm"
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500 text-sm"
               />
               <button
                 type="submit"
-                className="px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors duration-150 text-sm w-full sm:w-auto"
+                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-150 text-sm w-full sm:w-auto"
               >
                 Tìm kiếm
               </button>
@@ -201,7 +208,7 @@ const ProductList = () => {
               <select
                 value={selectedCategory || ''}
                 onChange={handleCategoryChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-pink-500 focus:border-pink-500 text-sm"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500 text-sm"
               >
                 <option value="">Tất cả danh mục</option>
                 {categoryList.map(category => (
@@ -215,10 +222,10 @@ const ProductList = () => {
         </div>
 
         {/* Content Section */}
-        <div className="bg-white rounded-xl shadow-sm border border-pink-100 overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm border border-green-100 overflow-hidden">
           {isLoading ? (
             <div className="flex items-center justify-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
             </div>
           ) : error ? (
             <div className="flex items-center justify-center h-64">
@@ -255,11 +262,15 @@ const ProductList = () => {
                         <tr key={product.id} className="hover:bg-gray-50 transition-colors duration-150">
                           <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
                             <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100">
-                              {product.image ? (
+                              {product.colors && product.colors[0]?.image ? (
                                 <img 
-                                  src={product.image} 
+                                  src={product.colors[0].image} 
                                   alt={product.name}
-                                  className="w-full h-full object-contain"
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    e.target.onerror = null;
+                                    e.target.src = 'https://placehold.co/100x100?text=No+Image';
+                                  }}
                                 />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center">
@@ -275,7 +286,7 @@ const ProductList = () => {
                             {/* Hiển thị giá và danh mục trên mobile */}
                             <div className="sm:hidden mt-1">
                               <div className="text-sm text-gray-500">{formatPrice(product.price)}</div>
-                              <span className="inline-flex mt-1 px-2 py-1 text-xs font-medium text-pink-700 bg-pink-100 rounded-full">
+                              <span className="inline-flex mt-1 px-2 py-1 text-xs font-medium text-green-700 bg-green-100 rounded-full">
                                 {getCategoryName(product.category_id)}
                               </span>
                             </div>
@@ -284,14 +295,14 @@ const ProductList = () => {
                             <div className="text-sm text-gray-900">{formatPrice(product.price)}</div>
                           </td>
                           <td className="px-4 sm:px-6 py-4 whitespace-nowrap hidden sm:table-cell">
-                            <span className="px-2 py-1 text-xs font-medium text-pink-700 bg-pink-100 rounded-full">
+                            <span className="px-2 py-1 text-xs font-medium text-green-700 bg-green-100 rounded-full">
                               {getCategoryName(product.category_id)}
                             </span>
                           </td>
                           <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <Link
                               to={`/admin/products/edit/${product.id}`}
-                              className="inline-flex items-center justify-center w-8 h-8 mr-2 text-pink-500 bg-pink-50 rounded-lg border border-pink-200 hover:bg-pink-100 hover:text-pink-600 hover:border-pink-300 transition-colors duration-150"
+                              className="inline-flex items-center justify-center w-8 h-8 mr-2 text-green-500 bg-green-50 rounded-lg border border-green-200 hover:bg-green-100 hover:text-green-600 hover:border-green-300 transition-colors duration-150"
                               title="Sửa sản phẩm"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

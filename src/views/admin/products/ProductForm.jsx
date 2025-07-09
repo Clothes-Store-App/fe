@@ -19,10 +19,18 @@ const ProductForm = () => {
     price: '',
     description: '',
     category_id: '',
-    image: null,
+    images: [],
+    colors: [
+      {
+        color_name: '',
+        color_code: '#000000', // Default color code
+        sizes: []
+      }
+    ],
     status: false
   });
-  const [imagePreview, setImagePreview] = useState(null);
+
+  const [imagePreview, setImagePreview] = useState([]);
   const [formError, setFormError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -40,11 +48,21 @@ const ProductForm = () => {
               price: product.price?.toString() || '',
               description: product.description || '',
               category_id: product.category_id?.toString() || '',
-              image: null,
+              images: [], // Reset images since we'll handle existing images differently
+              colors: product.colors?.map(color => ({
+                color_name: color.color_name || '',
+                color_code: color.color_code || '#000000',
+                sizes: color.colorSizes?.map(cs => cs.size.id) || [],
+                image: color.image || null // Store existing image URL
+              })) || [{
+                color_name: '',
+                color_code: '#000000',
+                sizes: []
+              }],
               status: product.status || false
             });
             // Set image preview for existing product
-            setImagePreview(product.image || null);
+            setImagePreview(product.colors?.map(color => color.image).filter(Boolean) || []);
           }
         } catch (error) {
           console.error('Failed to fetch product:', error);
@@ -65,26 +83,100 @@ const ProductForm = () => {
     }));
   };
 
+  // Handle color changes
+  const handleColorChange = (index, field, value) => {
+    // Validate color code format
+    if (field === 'color_code') {
+      if (!value.startsWith('#')) {
+        value = '#' + value;
+      }
+      // Ensure 6 digits after #
+      if (value.length < 7) {
+        value = value.padEnd(7, '0');
+      }
+      // Only allow valid hex characters
+      value = value.replace(/[^#0-9a-fA-F]/g, '0');
+    }
+
+    setFormData(prev => {
+      const newColors = [...prev.colors];
+      newColors[index] = {
+        ...newColors[index],
+        [field]: value
+      };
+      return {
+        ...prev,
+        colors: newColors
+      };
+    });
+  };
+
+  // Handle size changes
+  const handleSizeChange = (colorIndex, sizes) => {
+    setFormData(prev => {
+      const newColors = [...prev.colors];
+      newColors[colorIndex] = {
+        ...newColors[colorIndex],
+        sizes: sizes.map(size => parseInt(size))
+      };
+      return {
+        ...prev,
+        colors: newColors
+      };
+    });
+  };
+
+  // Add new color
+  const handleAddColor = () => {
+    setFormData(prev => ({
+      ...prev,
+      colors: [...prev.colors, {
+        color_name: '',
+        color_code: '',
+        sizes: []
+      }]
+    }));
+  };
+
+  // Remove color
+  const handleRemoveColor = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      colors: prev.colors.filter((_, i) => i !== index)
+    }));
+  };
+
   // Handle file input change
   const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
       setFormData(prev => ({
         ...prev,
-        image: file
+        images: [...prev.images, ...files]
       }));
-      // Create preview URL
-      const previewUrl = URL.createObjectURL(file);
-      setImagePreview(previewUrl);
+      // Create preview URLs
+      const newPreviews = files.map(file => URL.createObjectURL(file));
+      setImagePreview(prev => [...prev, ...newPreviews]);
     }
   };
 
-  // Cleanup preview URL when component unmounts
+  // Remove image
+  const handleRemoveImage = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index)
+    }));
+    setImagePreview(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Cleanup preview URLs when component unmounts
   useEffect(() => {
     return () => {
-      if (imagePreview && !imagePreview.includes('http')) {
-        URL.revokeObjectURL(imagePreview);
-      }
+      imagePreview.forEach(url => {
+        if (url && !url.includes('http')) {
+          URL.revokeObjectURL(url);
+        }
+      });
     };
   }, [imagePreview]);
 
@@ -93,6 +185,7 @@ const ProductForm = () => {
     e.preventDefault();
     setFormError('');
     
+    // Validation
     if (!formData.name.trim()) {
       setFormError('Vui lòng nhập tên sản phẩm');
       return;
@@ -105,6 +198,30 @@ const ProductForm = () => {
       setFormError('Vui lòng chọn danh mục');
       return;
     }
+    if (formData.colors.length === 0) {
+      setFormError('Vui lòng thêm ít nhất một màu sắc');
+      return;
+    }
+    if (formData.images.length === 0) {
+      setFormError('Vui lòng thêm ít nhất một hình ảnh');
+      return;
+    }
+
+    // Validate color data
+    for (const color of formData.colors) {
+      if (!color.color_name) {
+        setFormError('Vui lòng nhập tên cho tất cả các màu');
+        return;
+      }
+      if (!color.color_code || !color.color_code.match(/^#[0-9A-Fa-f]{6}$/)) {
+        setFormError('Mã màu không hợp lệ. Vui lòng sử dụng định dạng #RRGGBB');
+        return;
+      }
+      if (color.sizes.length === 0) {
+        setFormError('Vui lòng chọn ít nhất một size cho mỗi màu');
+        return;
+      }
+    }
 
     try {
       setIsSubmitting(true);
@@ -114,10 +231,23 @@ const ProductForm = () => {
       formDataToSend.append('description', formData.description.trim());
       formDataToSend.append('category_id', Number(formData.category_id));
       formDataToSend.append('status', formData.status);
+
+      // Prepare colors data with existing images
+      const colorsData = formData.colors.map((color, index) => ({
+        color_name: color.color_name,
+        color_code: color.color_code,
+        sizes: color.sizes,
+        image: color.image // Include existing image URL if any
+      }));
       
-      if (formData.image instanceof File) {
-        formDataToSend.append('image', formData.image);
-      }
+      formDataToSend.append('colors', JSON.stringify(colorsData));
+      
+      // Append new images
+      formData.images.forEach((image) => {
+        if (image instanceof File) {
+          formDataToSend.append('images', image);
+        }
+      });
 
       if (id) {
         await updateProduct({ id, body: formDataToSend }).unwrap();
@@ -157,7 +287,7 @@ const ProductForm = () => {
       {/* Modal */}
       <div className="fixed inset-0 z-[10000] overflow-y-auto">
         <div className="flex items-center justify-center min-h-screen p-2">
-          <div className="relative bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:w-full max-w-2xl">
+          <div className="relative bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:w-full max-w-4xl">
             {/* Header */}
             <div className="bg-gray-50 px-3 py-2 border-b border-gray-200">
               <div className="flex items-center justify-between">
@@ -179,7 +309,7 @@ const ProductForm = () => {
 
             {/* Content */}
             <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row divide-y sm:divide-y-0 sm:divide-x divide-gray-200">
-              {/* Left Column - Form Fields */}
+              {/* Left Column - Basic Info */}
               <div className="w-full sm:w-1/2 p-4 space-y-3">
                 {formError && (
                   <div className="p-2 bg-red-50 border-l-4 border-red-400 text-red-700 text-sm">
@@ -198,47 +328,45 @@ const ProductForm = () => {
                     value={formData.name}
                     onChange={handleChange}
                     required
-                    className="block w-full px-3 py-2 text-sm text-gray-900 bg-gray-50 rounded focus:outline-none focus:ring-1 focus:ring-pink-500 focus:bg-white transition-colors"
-                    placeholder="Nhập tên sản phẩm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
                   />
                 </div>
 
-                {/* Giá và Danh mục */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Giá (VNĐ)
-                    </label>
-                    <input
-                      type="number"
-                      name="price"
-                      value={formData.price}
-                      onChange={handleChange}
-                      required
-                      className="block w-full px-3 py-2 text-sm text-gray-900 bg-gray-50 rounded focus:outline-none focus:ring-1 focus:ring-pink-500 focus:bg-white transition-colors"
-                      placeholder="Nhập giá"
-                    />
-                  </div>
+                {/* Giá */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Giá
+                  </label>
+                  <input
+                    type="number"
+                    name="price"
+                    value={formData.price}
+                    onChange={handleChange}
+                    required
+                    min="0"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+                  />
+                </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Danh mục
-                    </label>
-                    <select
-                      name="category_id"
-                      value={formData.category_id}
-                      onChange={handleChange}
-                      required
-                      className="block w-full px-3 py-2 text-sm text-gray-900 bg-gray-50 rounded focus:outline-none focus:ring-1 focus:ring-pink-500 focus:bg-white transition-colors"
-                    >
-                      <option value="">Chọn danh mục</option>
-                      {categoryList.map(category => (
-                        <option key={category.id} value={category.id}>
-                          {category.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                {/* Danh mục */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Danh mục
+                  </label>
+                  <select
+                    name="category_id"
+                    value={formData.category_id}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+                  >
+                    <option value="">Chọn danh mục</option>
+                    {categoryList.map(category => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 {/* Mô tả */}
@@ -250,112 +378,207 @@ const ProductForm = () => {
                     name="description"
                     value={formData.description}
                     onChange={handleChange}
-                    rows={3}
-                    className="block w-full px-3 py-2 text-sm text-gray-900 bg-gray-50 rounded focus:outline-none focus:ring-1 focus:ring-pink-500 focus:bg-white transition-colors"
-                    placeholder="Nhập mô tả sản phẩm"
+                    rows="3"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
                   />
                 </div>
 
-                {/* Status Checkbox */}
+                {/* Trạng thái */}
                 <div className="flex items-center">
                   <input
                     type="checkbox"
                     name="status"
-                    id="status"
                     checked={formData.status}
                     onChange={handleChange}
-                    className="h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300 rounded cursor-pointer"
+                    className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
                   />
-                  <label htmlFor="status" className="ml-2 block text-sm text-gray-700 cursor-pointer">
-                    Sản phẩm hot
+                  <label className="ml-2 block text-sm text-gray-900">
+                    Hiển thị sản phẩm
                   </label>
                 </div>
 
-                {/* Buttons */}
-                <div className="flex justify-end space-x-2 pt-3">
+                {/* Hình ảnh */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Hình ảnh sản phẩm
+                  </label>
+                  <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                    <div className="space-y-1 text-center">
+                      <svg
+                        className="mx-auto h-12 w-12 text-gray-400"
+                        stroke="currentColor"
+                        fill="none"
+                        viewBox="0 0 48 48"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                          strokeWidth={2}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                      <div className="flex text-sm text-gray-600">
+                        <label
+                          htmlFor="images"
+                          className="relative cursor-pointer bg-white rounded-md font-medium text-green-600 hover:text-green-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-green-500"
+                        >
+                          <span>Tải ảnh lên</span>
+                          <input
+                            id="images"
+                            name="images"
+                            type="file"
+                            multiple
+                            accept="image/*"
+                            className="sr-only"
+                            onChange={handleFileChange}
+                          />
+                        </label>
+                        <p className="pl-1">hoặc kéo thả</p>
+                      </div>
+                      <p className="text-xs text-gray-500">PNG, JPG, GIF tối đa 10MB</p>
+                    </div>
+                  </div>
+                  {/* Image previews */}
+                  {imagePreview.length > 0 && (
+                    <div className="mt-2 grid grid-cols-3 gap-2">
+                      {imagePreview.map((url, index) => (
+                        <div key={index} className="relative">
+                          <img
+                            src={url}
+                            alt={`Preview ${index + 1}`}
+                            className="h-24 w-24 object-cover rounded-md"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveImage(index)}
+                            className="absolute top-0 right-0 -mt-2 -mr-2 bg-red-500 text-white rounded-full p-1"
+                          >
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Right Column - Colors and Sizes */}
+              <div className="w-full sm:w-1/2 p-4 space-y-4">
+                <div className="flex justify-between items-center">
+                  <h4 className="text-lg font-medium text-gray-900">Màu sắc và kích thước</h4>
                   <button
                     type="button"
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded focus:outline-none"
-                    onClick={handleClose}
+                    onClick={handleAddColor}
+                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-full shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                   >
-                    Hủy
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="px-4 py-2 text-sm font-medium text-white bg-pink-600 hover:bg-pink-700 rounded focus:outline-none disabled:bg-pink-300 disabled:cursor-not-allowed"
-                  >
-                    {isSubmitting ? 'Đang lưu...' : id ? 'Cập nhật' : 'Thêm mới'}
+                    Thêm màu
                   </button>
                 </div>
-              </div>
 
-              {/* Right Column - Image Upload */}
-              <div className="w-full sm:w-1/2 p-4 bg-gray-50">
-                <div className="space-y-3">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Hình ảnh
-                  </label>
-
-                  {/* Image preview */}
-                  <div className="aspect-square w-full bg-white rounded overflow-hidden">
-                    {imagePreview ? (
-                      <div className="relative w-full h-full">
-                        <img
-                          src={imagePreview}
-                          alt="Preview"
-                          className="w-full h-full object-contain"
-                        />
+                {formData.colors.map((color, index) => (
+                  <div key={index} className="p-4 border border-gray-200 rounded-lg space-y-3">
+                    <div className="flex justify-between items-center">
+                      <h5 className="text-sm font-medium text-gray-700">Màu {index + 1}</h5>
+                      {index > 0 && (
                         <button
                           type="button"
-                          onClick={() => {
-                            setImagePreview(null);
-                            setFormData(prev => ({ ...prev, image: null }));
-                          }}
-                          className="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full hover:bg-red-600 transition-colors"
+                          onClick={() => handleRemoveColor(index)}
+                          className="text-red-500 hover:text-red-700"
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                           </svg>
                         </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-center h-full">
-                        <div className="text-center">
-                          <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
-                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                          <p className="mt-2 text-sm text-gray-500">Chưa có ảnh</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                      )}
+                    </div>
 
-                  {/* Upload button */}
-                  <div className="flex justify-center">
-                    <label className="relative cursor-pointer">
-                      <span className="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded text-sm font-medium text-gray-700 hover:bg-gray-50">
-                        <svg className="mr-2 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                        </svg>
-                        {imagePreview ? 'Đổi ảnh' : 'Tải ảnh'}
-                      </span>
+                    {/* Color name */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Tên màu
+                      </label>
                       <input
-                        type="file"
-                        name="image"
-                        onChange={handleFileChange}
-                        accept="image/*"
-                        className="sr-only"
+                        type="text"
+                        value={color.color_name}
+                        onChange={(e) => handleColorChange(index, 'color_name', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+                        placeholder="VD: Đen, Trắng, ..."
                       />
-                    </label>
-                  </div>
+                    </div>
 
-                  <p className="text-sm text-center text-gray-500">
-                    PNG, JPG, GIF (≤10MB)
-                  </p>
-                </div>
+                    {/* Color code */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Mã màu
+                      </label>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="color"
+                          value={color.color_code}
+                          onChange={(e) => handleColorChange(index, 'color_code', e.target.value)}
+                          className="h-8 w-8 border border-gray-300 rounded"
+                        />
+                        <input
+                          type="text"
+                          value={color.color_code}
+                          onChange={(e) => handleColorChange(index, 'color_code', e.target.value)}
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+                          placeholder="#000000"
+                          pattern="^#[0-9A-Fa-f]{6}$"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Sizes */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Kích thước
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {[1, 2, 3, 4].map((size) => (
+                          <label key={size} className="inline-flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={color.sizes.includes(size)}
+                              onChange={(e) => {
+                                const newSizes = e.target.checked
+                                  ? [...color.sizes, size]
+                                  : color.sizes.filter(s => s !== size);
+                                handleSizeChange(index, newSizes);
+                              }}
+                              className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                            />
+                            <span className="ml-2 text-sm text-gray-700">Size {size}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </form>
+
+            {/* Footer */}
+            <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+              <button
+                type="submit"
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+                className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50"
+              >
+                {isSubmitting ? 'Đang lưu...' : id ? 'Cập nhật' : 'Thêm mới'}
+              </button>
+              <button
+                type="button"
+                onClick={handleClose}
+                className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+              >
+                Hủy
+              </button>
+            </div>
           </div>
         </div>
       </div>
