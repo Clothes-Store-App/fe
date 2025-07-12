@@ -93,6 +93,17 @@ export const api = createApi({
       }),
       invalidatesTags: ['Orders'],
     }),
+
+    // Product Size endpoints
+    getProductSizes: builder.query({
+      query: () => '/product-sizes',
+      providesTags: ['ProductSizes'],
+    }),
+    
+    getProductSize: builder.query({
+      query: (id) => `/product-sizes/${id}`,
+      providesTags: ['ProductSizes'],
+    }),
   }),
 });
 
@@ -107,4 +118,6 @@ export const {
   useGetOrdersQuery,
   useGetUserOrdersQuery,
   useCreateOrderMutation,
+  useGetProductSizesQuery,
+  useGetProductSizeQuery,
 } = api; 

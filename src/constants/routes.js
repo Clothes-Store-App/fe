@@ -1,3 +1,5 @@
+import React from 'react';
+
 export const ROUTES = {
   HOME: '/',
   LOGIN: '/login',
@@ -10,6 +12,7 @@ export const ROUTES = {
   ADMIN_POSTS: '/admin/posts',
   ADMIN_SLIDERS: '/admin/sliders',
   ADMIN_BANNERS: '/admin/banners',
+  ADMIN_USERS: '/admin/users',
   UNAUTHORIZED: '/unauthorized',
   PRODUCTS: '/products',
   PRODUCT_DETAIL: '/products/:id',

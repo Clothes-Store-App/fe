@@ -34,7 +34,7 @@ export const orderApi = createApi({
     }),
 
     getOrdersByAdmin: builder.query({
-      query: ({ page = 1, limit = 10, search = '', status = '', sort = 'ASC' } = {}) => {
+      query: ({ page = 1, limit = 10, search = '', status = '', sort = 'DESC' } = {}) => {
         const params = new URLSearchParams({
           page: page.toString(),
           limit: limit.toString(),
@@ -44,7 +44,56 @@ export const orderApi = createApi({
         if (search) params.append('search', search);
         if (status) params.append('status', status);
         
-        return `/orders/admin/list?${params.toString()}`;
+        const requestUrl = `/orders/admin/list?${params.toString()}`;
+        console.log('🚀 Making API request to:', requestUrl);
+        
+        return {
+          url: requestUrl,
+          method: 'GET',
+          credentials: 'include',
+        };
+      },
+      transformResponse: (response) => {
+        console.log('📦 Raw API Response:', response);
+        
+        if (!response.success) {
+          console.error('❌ API Error:', {
+            success: response.success,
+            message: response.message,
+            data: response.data
+          });
+          throw new Error(response.message || 'Failed to fetch orders');
+        }
+        
+        if (!response.data) {
+          console.error('❌ Invalid response structure:', response);
+          throw new Error('Invalid response structure from server');
+        }
+
+        const transformedData = {
+          data: {
+            orders: Array.isArray(response.data.orders) ? response.data.orders : [],
+            totalItems: Number(response.data.totalItems) || 0,
+            currentPage: Number(response.data.currentPage) || 1,
+            totalPages: Number(response.data.totalPages) || 1,
+          }
+        };
+        
+        console.log('✅ Transformed Data:', transformedData);
+        return transformedData;
+      },
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          console.log('🔄 Starting query with args:', arg);
+          const result = await queryFulfilled;
+          console.log('✨ Query completed successfully:', result);
+        } catch (error) {
+          console.error('💥 Query Error:', {
+            error: error.error,
+            message: error.message,
+            stack: error.stack
+          });
+        }
       },
       providesTags: ['Orders'],
     }),
