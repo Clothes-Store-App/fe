@@ -15,6 +15,7 @@ const authSlice = createSlice({
       state.user = user;
       state.isAuthenticated = true;
       state.isAdmin = user?.role === 'ROLE_ADMIN';
+      console.log('Auth state updated:', { user, isAdmin: state.isAdmin }); // Log để debug
     },
     logout: (state) => {
       state.user = null;

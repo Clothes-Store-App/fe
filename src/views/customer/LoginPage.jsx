@@ -23,9 +23,22 @@ const LoginPage = () => {
     e.preventDefault();
     try {
       const response = await login({ email, password }).unwrap();
-      dispatch(setCredentials(response));
-      navigate(ROUTES.HOME);
+      console.log('Login response:', response);
+      console.log('User data:', response.data.user); // Log user data để kiểm tra
+      console.log('User role:', response.data.user.role); // Log role để kiểm tra
+      
+      dispatch(setCredentials(response.data)); // Sửa lại để truyền response.data
+      
+      // Kiểm tra nếu là admin thì chuyển đến trang admin dashboard
+      if (response.data.user.role === 'ROLE_ADMIN') {
+        console.log('User is admin, navigating to dashboard');
+        navigate(ROUTES.ADMIN_DASHBOARD);
+      } else {
+        console.log('User is not admin, navigating to home');
+        navigate(ROUTES.HOME);
+      }
     } catch (err) {
+      console.error('Login error:', err);
       setError('Email hoặc mật khẩu không đúng');
     }
   };

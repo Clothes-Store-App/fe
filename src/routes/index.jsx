@@ -12,7 +12,6 @@ import AdminLayout from '../views/admin/Layout';
 
 // Pages
 import LoginPage from '../views/customer/LoginPage';
-import UnauthorizedPage from '../views/customer/UnauthorizedPage';
 
 // Admin Pages
 import Dashboard from '../views/admin/Dashboard';
@@ -22,8 +21,6 @@ import ProductList from '../views/admin/products/ProductList';
 import ProductForm from '../views/admin/products/ProductForm';
 import OrderList from '../views/admin/orders/OrderList';
 import SliderList from '../views/admin/sliders/SliderList';
-
-const VideoList = lazy(() => import('../views/admin/videos/VideoList'));
 
 // Loading component
 const Loading = () => (
@@ -42,19 +39,13 @@ const AppRoutes = () => {
         {/* Root redirect to admin */}
         <Route path="/" element={<Navigate to={ROUTES.ADMIN} replace />} />
         
-        {/* Admin Routes */}
-        <Route path={ROUTES.ADMIN} element={
-          isAuthenticated ? (
-            isAdmin ? <Navigate to={ROUTES.ADMIN_DASHBOARD} replace /> : <Navigate to={ROUTES.UNAUTHORIZED} replace />
-          ) : <LoginPage />
-        } />
-        
-        {/* Error Pages */}
-        <Route path={ROUTES.UNAUTHORIZED} element={<UnauthorizedPage />} />
+        {/* Login Route */}
+        <Route path={ROUTES.LOGIN} element={<LoginPage />} />
         
         {/* Protected Admin Routes */}
         <Route element={<RequireAdmin />}>
-          <Route path="/admin" element={<AdminLayout />}>
+          <Route path={ROUTES.ADMIN} element={<AdminLayout />}>
+            <Route index element={<Navigate to={ROUTES.ADMIN_DASHBOARD} replace />} />
             <Route path={ROUTES.ADMIN_DASHBOARD} element={<Dashboard />} />
             <Route path={ROUTES.ADMIN_CATEGORIES} element={<CategoryList />} />
             <Route path={ROUTES.ADMIN_CATEGORY_ADD} element={<CreateCategory />} />
@@ -62,11 +53,6 @@ const AppRoutes = () => {
             <Route path="/admin/products/add" element={<ProductForm />} />
             <Route path="/admin/products/edit/:id" element={<ProductForm />} />
             <Route path={ROUTES.ADMIN_ORDERS} element={<OrderList />} />
-            <Route path={ROUTES.ADMIN_VIDEOS} element={
-              <Suspense fallback={<Loading />}>
-                <VideoList />
-              </Suspense>
-            } />
             <Route path={ROUTES.ADMIN_SLIDERS} element={<SliderList />} />
           </Route>
         </Route>
