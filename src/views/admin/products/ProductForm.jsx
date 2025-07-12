@@ -2,12 +2,22 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useGetCategoriesQuery } from '../../../services/category.service';
 import { useCreateProductMutation, useUpdateProductMutation } from '../../../services/products.service';
+import { useGetProductSizesQuery } from '../../../services/product-size.service';
 
 const ProductForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(true);
   const { data: categories } = useGetCategoriesQuery();
+  const { data: sizesData, isLoading: sizesLoading } = useGetProductSizesQuery();
+  
+  // Log dữ liệu sizes khi có
+  useEffect(() => {
+    if (sizesData) {
+      console.log('Dữ liệu size từ API:', sizesData);
+    }
+  }, [sizesData]);
+
   const categoryList = categories?.data || [];
   
   const [addProduct, {isLoading: isAdding}] = useCreateProductMutation();
@@ -43,6 +53,15 @@ const ProductForm = () => {
           const data = await response.json();
           if (data.success && data.data) {
             const product = data.data;
+            console.log('Dữ liệu sản phẩm từ API:', product);
+            console.log('Chi tiết sizes của sản phẩm:', product.colors?.map(color => ({
+              color_name: color.color_name,
+              sizes: color.colorSizes?.map(cs => ({
+                size_id: cs.size.id,
+                size_name: cs.size.size_name
+              }))
+            })));
+            
             setFormData({
               name: product.name || '',
               price: product.price?.toString() || '',
@@ -73,6 +92,17 @@ const ProductForm = () => {
 
     loadProduct();
   }, [id]);
+
+  // Log khi formData thay đổi để debug
+  useEffect(() => {
+    if (id && formData.colors.length > 0) {
+      console.log('Form data sau khi load:', formData);
+      console.log('Sizes đã chọn theo màu:', formData.colors.map(color => ({
+        color_name: color.color_name,
+        selected_sizes: color.sizes
+      })));
+    }
+  }, [formData, id]);
   
   // Handle form input changes
   const handleChange = (e) => {
@@ -202,7 +232,11 @@ const ProductForm = () => {
       setFormError('Vui lòng thêm ít nhất một màu sắc');
       return;
     }
-    if (formData.images.length === 0) {
+
+    // Kiểm tra ảnh: Chỉ yêu cầu ảnh mới nếu không có ảnh cũ
+    const hasNewImages = formData.images.length > 0;
+    const hasExistingImages = formData.colors.some(color => color.image);
+    if (!hasNewImages && !hasExistingImages) {
       setFormError('Vui lòng thêm ít nhất một hình ảnh');
       return;
     }
@@ -233,31 +267,76 @@ const ProductForm = () => {
       formDataToSend.append('status', formData.status);
 
       // Prepare colors data with existing images
-      const colorsData = formData.colors.map((color, index) => ({
+      const colorsData = formData.colors.map((color) => ({
         color_name: color.color_name,
         color_code: color.color_code,
         sizes: color.sizes,
-        image: color.image // Include existing image URL if any
+        image: color.image || null // Giữ lại ảnh cũ nếu có
       }));
       
       formDataToSend.append('colors', JSON.stringify(colorsData));
       
-      // Append new images
-      formData.images.forEach((image) => {
-        if (image instanceof File) {
-          formDataToSend.append('images', image);
-        }
-      });
+      // Chỉ append ảnh mới nếu có
+      if (hasNewImages) {
+        formData.images.forEach((image) => {
+          if (image instanceof File) {
+            formDataToSend.append('images', image);
+          }
+        });
+      }
+
+      // Log chi tiết dữ liệu gửi đi
+      console.log('=== DEBUG DỮ LIỆU GỬI ĐI ===');
+      console.log('FormData entries:');
+      for (let pair of formDataToSend.entries()) {
+        console.log(pair[0], pair[1]);
+      }
+      console.log('Colors Data:', colorsData);
+      console.log('Form Data gốc:', formData);
+      console.log('Có ảnh mới:', hasNewImages);
+      console.log('Có ảnh cũ:', hasExistingImages);
+      console.log('=== END DEBUG ===');
 
       if (id) {
-        await updateProduct({ id, body: formDataToSend }).unwrap();
+        try {
+          const result = await updateProduct({
+            id,
+            data: formDataToSend
+          }).unwrap();
+          
+          console.log('Kết quả từ API:', result);
+          
+          if (!result.success) {
+            throw new Error(result.message || 'Có lỗi xảy ra khi cập nhật sản phẩm');
+          }
+        } catch (updateError) {
+          console.error('Chi tiết lỗi khi cập nhật:', {
+            error: updateError,
+            status: updateError.status,
+            data: updateError.data,
+            message: updateError.message
+          });
+          throw updateError;
+        }
       } else {
-        await addProduct(formDataToSend).unwrap();
+        const result = await addProduct(formDataToSend).unwrap();
+        
+        if (!result.success) {
+          throw new Error(result.message || 'Có lỗi xảy ra khi thêm sản phẩm');
+        }
       }
-      handleClose();
+
+      navigate('/admin/products');
     } catch (error) {
-      console.error('Failed to save product:', error);
-      setFormError(error.data?.message || 'Có lỗi xảy ra khi lưu sản phẩm');
+      console.error('Chi tiết lỗi:', {
+        error: error,
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+        data: error.data,
+        status: error.status
+      });
+      setFormError(error.message || 'Có lỗi xảy ra khi lưu sản phẩm');
     } finally {
       setIsSubmitting(false);
     }
@@ -533,27 +612,33 @@ const ProductForm = () => {
                     </div>
 
                     {/* Sizes */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-gray-700">
                         Kích thước
                       </label>
-                      <div className="flex flex-wrap gap-2">
-                        {[1, 2, 3, 4].map((size) => (
-                          <label key={size} className="inline-flex items-center">
-                            <input
-                              type="checkbox"
-                              checked={color.sizes.includes(size)}
-                              onChange={(e) => {
-                                const newSizes = e.target.checked
-                                  ? [...color.sizes, size]
-                                  : color.sizes.filter(s => s !== size);
-                                handleSizeChange(index, newSizes);
-                              }}
-                              className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
-                            />
-                            <span className="ml-2 text-sm text-gray-700">Size {size}</span>
-                          </label>
-                        ))}
+                      <div className="mt-2 space-y-2">
+                        {sizesLoading ? (
+                          <div>Đang tải kích thước...</div>
+                        ) : sizesData?.data ? (
+                          sizesData.data.map((size) => (
+                            <label key={size.id} className="inline-flex items-center mr-4">
+                              <input
+                                type="checkbox"
+                                className="form-checkbox h-4 w-4 text-indigo-600"
+                                checked={color.sizes.includes(size.id)}
+                                onChange={(e) => {
+                                  const newSizes = e.target.checked
+                                    ? [...color.sizes, size.id]
+                                    : color.sizes.filter(s => s !== size.id);
+                                  handleSizeChange(index, newSizes);
+                                }}
+                              />
+                              <span className="ml-2">{size.size_name}</span>
+                            </label>
+                          ))
+                        ) : (
+                          <div>Không thể tải dữ liệu kích thước</div>
+                        )}
                       </div>
                     </div>
                   </div>

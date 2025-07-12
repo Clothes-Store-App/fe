@@ -39,10 +39,10 @@ export const productsApi = createApi({
 
     // Cập nhật sản phẩm
     updateProduct: builder.mutation({
-      query: ({ id, body }) => ({
+      query: ({ id, data }) => ({
         url: `/products/${id}`,
         method: 'PUT',
-        body,
+        body: data,
       }),
       invalidatesTags: ['Products'],
     }),

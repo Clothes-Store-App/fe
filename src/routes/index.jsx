@@ -21,6 +21,7 @@ import ProductList from '../views/admin/products/ProductList';
 import ProductForm from '../views/admin/products/ProductForm';
 import OrderList from '../views/admin/orders/OrderList';
 import SliderList from '../views/admin/sliders/SliderList';
+import UserList from '../views/admin/users/UserList';
 
 // Loading component
 const Loading = () => (
@@ -54,6 +55,7 @@ const AppRoutes = () => {
             <Route path="/admin/products/edit/:id" element={<ProductForm />} />
             <Route path={ROUTES.ADMIN_ORDERS} element={<OrderList />} />
             <Route path={ROUTES.ADMIN_SLIDERS} element={<SliderList />} />
+            <Route path={ROUTES.ADMIN_USERS} element={<UserList />} />
           </Route>
         </Route>
         
