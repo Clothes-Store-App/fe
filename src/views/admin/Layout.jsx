@@ -200,27 +200,6 @@ function AdminLayout() {
             </li>
             <li>
               <Link
-                to={ROUTES.ADMIN_POSTS}
-                className={`flex items-center p-2 text-gray-800 rounded-lg hover:bg-green-50 group ${
-                  isActive(ROUTES.ADMIN_POSTS) ? 'bg-green-50' : ''
-                }`}
-              >
-                <svg
-                  className="w-5 h-5 text-gray-500 transition duration-75 group-hover:text-green-600"
-                  aria-hidden="true"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path d="M5 5V.13a2.96 2.96 0 0 0-1.293.749L.879 3.707A2.96 2.96 0 0 0 .13 5H5Z"/>
-                  <path d="M6.737 11.061a2.961 2.961 0 0 1 .81-1.515l6.117-6.116A4.839 4.839 0 0 1 16 2.141V2a1.97 1.97 0 0 0-1.933-2H7v5a2 2 0 0 1-2 2H0v11a1.969 1.969 0 0 0 1.933 2h12.134A1.97 1.97 0 0 0 16 18v-3.093l-1.546 1.546c-.413.413-.94.695-1.513.81l-3.4.679a2.947 2.947 0 0 1-1.85-.227 2.96 2.96 0 0 1-1.635-3.257l.681-3.397Z"/>
-                  <path d="M8.961 16a.93.93 0 0 0 .189-.019l3.4-.679a.961.961 0 0 0 .49-.263l6.118-6.117a2.884 2.884 0 0 0-4.079-4.078l-6.117 6.117a.96.96 0 0 0-.263.491l-.679 3.4A.961.961 0 0 0 8.961 16Zm7.477-9.8a.958.958 0 0 1 .68-.281.961.961 0 0 1 .682 1.644l-.315.315-1.36-1.36.313-.318Zm-5.911 5.911 4.236-4.236 1.359 1.359-4.236 4.237-1.7.339.341-1.699Z"/>
-                </svg>
-                <span className="ml-3">Bài viết</span>
-              </Link>
-            </li>
-            <li>
-              <Link
                 to={ROUTES.ADMIN_SLIDERS}
                 className={`flex items-center p-2 text-gray-800 rounded-lg hover:bg-green-50 group ${
                   isActive(ROUTES.ADMIN_SLIDERS) ? 'bg-green-50' : ''
@@ -238,34 +217,14 @@ function AdminLayout() {
                 <span className="ml-3">Slider</span>
               </Link>
             </li>
-            <li>
-              <Link
-                to={ROUTES.ADMIN_BANNERS}
-                className={`flex items-center p-2 text-gray-800 rounded-lg hover:bg-green-50 group ${
-                  isActive(ROUTES.ADMIN_BANNERS) ? 'bg-green-50' : ''
-                }`}
-              >
-                <svg
-                  className="w-5 h-5 text-gray-500 transition duration-75 group-hover:text-green-600"
-                  aria-hidden="true"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path d="M18 5h-.7c.229-.467.349-.98.351-1.5a3.5 3.5 0 0 0-3.5-3.5c-1.717 0-3.215 1.2-4.331 2.481C8.4.842 6.949 0 5.5 0A3.5 3.5 0 0 0 2 3.5c.003.52.123 1.033.351 1.5H2a2 2 0 0 0-2 2v3a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1V7a2 2 0 0 0-2-2ZM8.058 5H5.5a1.5 1.5 0 0 1 0-3c.9 0 2 .754 3.092 2.122-.219.337-.392.635-.534.878Zm6.1 0h-3.742c.933-1.368 2.371-3 3.739-3a1.5 1.5 0 0 1 0 3h.003ZM11 13H9v7h2v-7Zm-4 0H2v5a2 2 0 0 0 2 2h3v-7Zm6 0v7h3a2 2 0 0 0 2-2v-5h-5Z"/>
-                </svg>
-                <span className="ml-3">Banner</span>
-              </Link>
-            </li>
           </ul>
         </div>
       </aside>
 
       {/* Main content */}
       <div className={`p-4 ${isSidebarOpen ? 'md:ml-64' : ''}`}>
-        <div className="mt-14">
-          <Outlet />
-        </div>
+        <div className="h-16"></div> {/* Spacer for navbar */}
+        <Outlet />
       </div>
     </div>
   );
