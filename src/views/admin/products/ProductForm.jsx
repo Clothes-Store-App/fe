@@ -275,31 +275,19 @@ const ProductForm = () => {
           color_name: color.color_name,
           color_code: color.color_code,
           sizes: color.sizes,
-          // Luôn giữ lại đường dẫn ảnh cũ nếu có, bất kể có ảnh mới hay không
-          image: color.image || null
+          // Nếu không có ảnh mới, giữ lại URL ảnh cũ
+          image: hasNewImageForThisColor ? null : color.image
         };
       });
       
       formDataToSend.append('colors', JSON.stringify(colorsData));
       
-      // Chỉ append những ảnh mới và đánh dấu index của màu tương ứng
-      const newImages = [];
-      const imageIndexes = [];
-      
+      // Chỉ append những ảnh mới
       formData.images.forEach((image, index) => {
         if (image instanceof File) {
-          newImages.push(image);
-          imageIndexes.push(index); // Lưu index của màu sẽ được cập nhật ảnh
+          formDataToSend.append('images', image);
         }
       });
-
-      // Gửi ảnh mới nếu có
-      newImages.forEach(image => {
-        formDataToSend.append('images', image);
-      });
-      
-      // Gửi thông tin về index của các màu cần cập nhật ảnh
-      formDataToSend.append('imageIndexes', JSON.stringify(imageIndexes));
 
       // Log chi tiết dữ liệu gửi đi
       console.log('=== DEBUG DỮ LIỆU GỬI ĐI ===');
