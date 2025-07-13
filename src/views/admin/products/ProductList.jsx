@@ -27,7 +27,6 @@ const ProductList = () => {
   const [deleteProduct] = useDeleteProductMutation();
 
   const productList = useMemo(() => productsData?.data?.products || [], [productsData?.data?.products]);
-  console.log(productList);
   const categoryList = useMemo(() => categories?.data || [], [categories?.data]);
   const totalItems = useMemo(() => productsData?.data?.totalItems || 0, [productsData?.data?.totalItems]);
   const totalPages = useMemo(() => {

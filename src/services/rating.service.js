@@ -35,7 +35,6 @@ export const ratingsApi = createApi({
       }),
       providesTags: ['Ratings'],
       transformResponse: (response) => {
-        console.log('Dữ liệu đánh giá từ API:', response);
         return response;
       },
     }),
@@ -48,7 +47,6 @@ export const ratingsApi = createApi({
       }),
       providesTags: ['Ratings'],
       transformResponse: (response) => {
-        console.log('Đánh giá của sản phẩm:', response);
         return response;
       },
     }),

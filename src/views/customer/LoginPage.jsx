@@ -30,7 +30,6 @@ const LoginPage = () => {
 
     try {      
       const response = await login({ email, password }).unwrap();
-      console.log('Login response:', response);
       
       // Hiển thị thông báo thành công
       setSuccess(true);
