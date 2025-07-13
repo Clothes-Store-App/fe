@@ -57,7 +57,7 @@ export const productsApi = createApi({
     }),
 
     getProductsByAdmin: builder.query({
-      query: ({ page = 1, limit = 10, search = '', category_id = null }) => {
+      query: ({ page = 1, limit = 10, search = '', category_id = null, status = null }) => {
         const params = new URLSearchParams({
           page: page.toString(),
           limit: limit.toString(),
@@ -65,6 +65,7 @@ export const productsApi = createApi({
 
         if (search) params.append('search', search);
         if (category_id) params.append('category_id', category_id.toString());
+        if (status !== null) params.append('status', status.toString());
 
         return `/products/admin/list?${params.toString()}`;
       },

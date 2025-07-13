@@ -267,23 +267,39 @@ const ProductForm = () => {
       formDataToSend.append('status', formData.status);
 
       // Prepare colors data with existing images
-      const colorsData = formData.colors.map((color) => ({
-        color_name: color.color_name,
-        color_code: color.color_code,
-        sizes: color.sizes,
-        image: color.image || null // Giữ lại ảnh cũ nếu có
-      }));
+      const colorsData = formData.colors.map((color, index) => {
+        // Nếu có ảnh mới cho màu này
+        const hasNewImageForThisColor = formData.images[index] instanceof File;
+        
+        return {
+          color_name: color.color_name,
+          color_code: color.color_code,
+          sizes: color.sizes,
+          // Luôn giữ lại đường dẫn ảnh cũ nếu có, bất kể có ảnh mới hay không
+          image: color.image || null
+        };
+      });
       
       formDataToSend.append('colors', JSON.stringify(colorsData));
       
-      // Chỉ append ảnh mới nếu có
-      if (hasNewImages) {
-        formData.images.forEach((image) => {
-          if (image instanceof File) {
-            formDataToSend.append('images', image);
-          }
-        });
-      }
+      // Chỉ append những ảnh mới và đánh dấu index của màu tương ứng
+      const newImages = [];
+      const imageIndexes = [];
+      
+      formData.images.forEach((image, index) => {
+        if (image instanceof File) {
+          newImages.push(image);
+          imageIndexes.push(index); // Lưu index của màu sẽ được cập nhật ảnh
+        }
+      });
+
+      // Gửi ảnh mới nếu có
+      newImages.forEach(image => {
+        formDataToSend.append('images', image);
+      });
+      
+      // Gửi thông tin về index của các màu cần cập nhật ảnh
+      formDataToSend.append('imageIndexes', JSON.stringify(imageIndexes));
 
       // Log chi tiết dữ liệu gửi đi
       console.log('=== DEBUG DỮ LIỆU GỬI ĐI ===');
