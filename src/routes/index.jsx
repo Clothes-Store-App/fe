@@ -22,6 +22,7 @@ import ProductForm from '../views/admin/products/ProductForm';
 import OrderList from '../views/admin/orders/OrderList';
 import SliderList from '../views/admin/sliders/SliderList';
 import UserList from '../views/admin/users/UserList';
+import RatingList from '../views/admin/ratings/RatingList';
 
 // Loading component
 const Loading = () => (
@@ -56,6 +57,7 @@ const AppRoutes = () => {
             <Route path={ROUTES.ADMIN_ORDERS} element={<OrderList />} />
             <Route path={ROUTES.ADMIN_SLIDERS} element={<SliderList />} />
             <Route path={ROUTES.ADMIN_USERS} element={<UserList />} />
+            <Route path={ROUTES.ADMIN_RATINGS} element={<RatingList />} />
           </Route>
         </Route>
         

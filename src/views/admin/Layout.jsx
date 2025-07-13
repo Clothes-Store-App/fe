@@ -238,6 +238,25 @@ function AdminLayout() {
                 <span className="ml-3">Người dùng</span>
               </Link>
             </li>
+            <li>
+              <Link
+                to={ROUTES.ADMIN_RATINGS}
+                className={`flex items-center p-2 text-gray-800 rounded-lg hover:bg-green-50 group ${
+                  isActive(ROUTES.ADMIN_RATINGS) ? 'bg-green-50' : ''
+                }`}
+              >
+                <svg
+                  className="w-5 h-5 text-gray-500 transition duration-75 group-hover:text-green-600"
+                  aria-hidden="true"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M12 .587l3.668 7.568 8.332 1.151-6.064 5.828 1.48 8.279-7.416-3.967-7.417 3.967 1.481-8.279-6.064-5.828 8.332-1.151z"/>
+                </svg>
+                <span className="ml-3">Đánh giá</span>
+              </Link>
+            </li>
           </ul>
         </div>
       </aside>

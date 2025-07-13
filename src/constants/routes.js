@@ -13,6 +13,7 @@ export const ROUTES = {
   ADMIN_SLIDERS: '/admin/sliders',
   ADMIN_BANNERS: '/admin/banners',
   ADMIN_USERS: '/admin/users',
+  ADMIN_RATINGS: '/admin/ratings',
   UNAUTHORIZED: '/unauthorized',
   PRODUCTS: '/products',
   PRODUCT_DETAIL: '/products/:id',

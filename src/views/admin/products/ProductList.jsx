@@ -10,6 +10,7 @@ const ProductList = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedStatus, setSelectedStatus] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [currentProduct, setCurrentProduct] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -18,13 +19,15 @@ const ProductList = () => {
     page: currentPage,
     limit: perPage,
     search: searchQuery,
-    category_id: selectedCategory
+    category_id: selectedCategory,
+    status: selectedStatus
   });
 
   const { data: categories } = useGetCategoriesQuery();
   const [deleteProduct] = useDeleteProductMutation();
 
   const productList = useMemo(() => productsData?.data?.products || [], [productsData?.data?.products]);
+  console.log(productList);
   const categoryList = useMemo(() => categories?.data || [], [categories?.data]);
   const totalItems = useMemo(() => productsData?.data?.totalItems || 0, [productsData?.data?.totalItems]);
   const totalPages = useMemo(() => {
@@ -142,6 +145,15 @@ const ProductList = () => {
             {getCategoryName(product.category_id)}
           </span>
         </td>
+        <td className="px-6 py-4 whitespace-nowrap">
+          <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+            product.status 
+            ? 'text-green-700 bg-green-100' 
+            : 'text-red-700 bg-red-100'
+          }`}>
+            {product.status ? 'Đang bán' : 'Ngừng bán'}
+          </span>
+        </td>
         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
           <Link
             to={`/admin/products/edit/${product.id}`}
@@ -204,11 +216,11 @@ const ProductList = () => {
                 Tìm kiếm
               </button>
             </div>
-            <div className="w-full sm:w-64">
+            <div className="flex flex-col sm:flex-row gap-2">
               <select
                 value={selectedCategory || ''}
                 onChange={handleCategoryChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500 text-sm"
+                className="w-full sm:w-48 px-4 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500 text-sm"
               >
                 <option value="">Tất cả danh mục</option>
                 {categoryList.map(category => (
@@ -216,6 +228,19 @@ const ProductList = () => {
                     {category.name}
                   </option>
                 ))}
+              </select>
+              <select
+                value={selectedStatus === null ? '' : selectedStatus.toString()}
+                onChange={(e) => {
+                  const value = e.target.value === '' ? null : e.target.value === 'true';
+                  setSelectedStatus(value);
+                  setCurrentPage(1);
+                }}
+                className="w-full sm:w-48 px-4 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500 text-sm"
+              >
+                <option value="">Tất cả trạng thái</option>
+                <option value="true">Đang bán</option>
+                <option value="false">Ngừng bán</option>
               </select>
             </div>
           </form>
@@ -247,20 +272,21 @@ const ProductList = () => {
                       <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên sản phẩm</th>
                       <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Giá</th>
                       <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Danh mục</th>
+                      <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Trạng thái</th>
                       <th scope="col" className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {productList.length === 0 ? (
                       <tr>
-                        <td colSpan="5" className="px-4 sm:px-6 py-4 text-center text-sm text-gray-500">
+                        <td colSpan="6" className="px-6 py-4 text-center text-sm text-gray-500">
                           Không có sản phẩm nào
                         </td>
                       </tr>
                     ) : (
                       productList.map((product) => (
                         <tr key={product.id} className="hover:bg-gray-50 transition-colors duration-150">
-                          <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                          <td className="px-6 py-4 whitespace-nowrap">
                             <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100">
                               {product.colors && product.colors[0]?.image ? (
                                 <img 
@@ -281,25 +307,30 @@ const ProductList = () => {
                               )}
                             </div>
                           </td>
-                          <td className="px-4 sm:px-6 py-4">
+                          <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm font-medium text-gray-900">{product.name}</div>
-                            {/* Hiển thị giá và danh mục trên mobile */}
-                            <div className="sm:hidden mt-1">
-                              <div className="text-sm text-gray-500">{formatPrice(product.price)}</div>
-                              <span className="inline-flex mt-1 px-2 py-1 text-xs font-medium text-green-700 bg-green-100 rounded-full">
-                                {getCategoryName(product.category_id)}
-                              </span>
+                            <div className="text-xs text-gray-500 mt-1">
+                              {product.colors?.length || 0} màu sắc
                             </div>
                           </td>
-                          <td className="px-4 sm:px-6 py-4 whitespace-nowrap hidden sm:table-cell">
+                          <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm text-gray-900">{formatPrice(product.price)}</div>
                           </td>
-                          <td className="px-4 sm:px-6 py-4 whitespace-nowrap hidden sm:table-cell">
+                          <td className="px-6 py-4 whitespace-nowrap">
                             <span className="px-2 py-1 text-xs font-medium text-green-700 bg-green-100 rounded-full">
                               {getCategoryName(product.category_id)}
                             </span>
                           </td>
-                          <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                              product.status 
+                                ? 'text-green-700 bg-green-100' 
+                                : 'text-red-700 bg-red-100'
+                            }`}>
+                              {product.status ? 'Đang bán' : 'Ngừng bán'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <Link
                               to={`/admin/products/edit/${product.id}`}
                               className="inline-flex items-center justify-center w-8 h-8 mr-2 text-green-500 bg-green-50 rounded-lg border border-green-200 hover:bg-green-100 hover:text-green-600 hover:border-green-300 transition-colors duration-150"
@@ -311,11 +342,19 @@ const ProductList = () => {
                             </Link>
                             <button
                               onClick={() => handleDelete(product)}
-                              className="inline-flex items-center justify-center w-8 h-8 text-red-500 bg-red-50 rounded-lg border border-red-200 hover:bg-red-100 hover:text-red-600 hover:border-red-300 transition-colors duration-150"
-                              title="Xóa sản phẩm"
+                              className={`inline-flex items-center justify-center w-8 h-8 rounded-lg border transition-colors duration-150 ${
+                                product.status
+                                  ? 'text-red-500 bg-red-50 border-red-200 hover:bg-red-100 hover:text-red-600 hover:border-red-300'
+                                  : 'text-green-500 bg-green-50 border-green-200 hover:bg-green-100 hover:text-green-600 hover:border-green-300'
+                              }`}
+                              title={product.status ? 'Ẩn sản phẩm' : 'Hiện sản phẩm'}
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                {product.status ? (
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                                ) : (
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                )}
                               </svg>
                             </button>
                           </td>
@@ -347,50 +386,45 @@ const ProductList = () => {
           )}
         </div>
 
-        {/* Delete Confirmation Modal */}
+        {/* Modal */}
         {isDeleteModalOpen && (
-          <div className="fixed inset-0 z-50 overflow-y-auto">
-            <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-              <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-                <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
-              </div>
-              <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-              <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                  <div className="sm:flex sm:items-start">
-                    <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
-                      <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-sm mx-4">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">
+                {currentProduct?.status ? 'Ẩn sản phẩm' : 'Hiện sản phẩm'}
+              </h3>
+              <p className="text-sm text-gray-500 mb-4">
+                Bạn có chắc chắn muốn {currentProduct?.status ? 'ẩn' : 'hiện'} sản phẩm "{currentProduct?.name}" không?
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setIsDeleteModalOpen(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                  disabled={isSubmitting}
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={submitDeleteProduct}
+                  disabled={isSubmitting}
+                  className={`px-4 py-2 text-sm font-medium text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                    currentProduct?.status
+                      ? 'bg-red-500 hover:bg-red-600 focus:ring-red-500'
+                      : 'bg-green-500 hover:bg-green-600 focus:ring-green-500'
+                  }`}
+                >
+                  {isSubmitting ? (
+                    <span className="flex items-center">
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                       </svg>
-                    </div>
-                    <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                      <h3 className="text-lg leading-6 font-medium text-gray-900">Xác nhận xóa</h3>
-                      <div className="mt-2">
-                        <p className="text-sm text-gray-500">
-                          Bạn có chắc chắn muốn xóa sản phẩm <span className="font-semibold">{currentProduct?.name}</span>?
-                          Hành động này không thể hoàn tác.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                  <button
-                    type="button"
-                    onClick={submitDeleteProduct}
-                    disabled={isSubmitting}
-                    className={`w-full sm:w-auto inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:text-sm ${isSubmitting ? 'opacity-75 cursor-not-allowed' : ''}`}
-                  >
-                    {isSubmitting ? 'Đang xử lý...' : 'Xóa'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsDeleteModalOpen(false)}
-                    className="mt-3 sm:mt-0 w-full sm:w-auto inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 sm:ml-3 sm:text-sm"
-                  >
-                    Hủy
-                  </button>
-                </div>
+                      Đang xử lý...
+                    </span>
+                  ) : (
+                    'Xác nhận'
+                  )}
+                </button>
               </div>
             </div>
           </div>

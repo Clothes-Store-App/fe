@@ -11,6 +11,7 @@ import { productsApi } from '../services/products.service';
 import { orderApi } from '../services/order.sevice';
 import { analyticsApi } from '../services/analytics.service';
 import { sliderApi } from '../services/slider.service';
+import { ratingsApi } from '../services/rating.service';
 
 const persistConfig = {
   key: 'root',
@@ -25,6 +26,7 @@ const rootReducer = combineReducers({
   [orderApi.reducerPath]: orderApi.reducer,
   [analyticsApi.reducerPath]: analyticsApi.reducer,
   [sliderApi.reducerPath]: sliderApi.reducer,
+  [ratingsApi.reducerPath]: ratingsApi.reducer,
   auth: authReducer,
 });
 
@@ -44,6 +46,7 @@ export const store = configureStore({
     .concat(orderApi.middleware)
     .concat(analyticsApi.middleware)
     .concat(sliderApi.middleware)
+    .concat(ratingsApi.middleware)
 });
 
 export const persistor = persistStore(store);
