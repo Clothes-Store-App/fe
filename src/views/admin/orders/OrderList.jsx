@@ -26,42 +26,19 @@ const OrderList = () => {
     sort: sortOrder
   });
 
-  console.log('🎯 Component Props:', {
-    currentPage,
-    perPage,
-    searchQuery,
-    selectedStatus,
-    sortOrder
-  });
-
-  console.log('📊 Orders Data:', ordersData);
-  
-  if (error) {
-    console.error('❌ Component Error:', {
-      status: error.status,
-      data: error.data,
-      message: error.message
-    });
-  }
-
   // Đảm bảo orders là một mảng và xử lý dữ liệu đúng cách
   const orders = useMemo(() => {
     const result = ordersData?.data?.orders || [];
-    console.log('🔍 Raw orders data:', ordersData);
-    console.log('📦 Orders array:', result);
-    console.log('📊 First order sample:', result[0]);
     return result;
   }, [ordersData?.data?.orders]);
 
   const totalItems = useMemo(() => {
     const total = ordersData?.data?.totalItems || 0;
-    console.log('🔢 Total Items:', total);
     return total;
   }, [ordersData?.data?.totalItems]);
 
   const totalPages = useMemo(() => {
     const pages = ordersData?.data?.totalPages || 1;
-    console.log('📄 Total Pages:', pages);
     return pages;
   }, [ordersData?.data?.totalPages]);
 
