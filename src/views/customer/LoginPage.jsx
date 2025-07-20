@@ -11,6 +11,8 @@ const LoginPage = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [animationStarted, setAnimationStarted] = useState(false);
   const [login] = useLoginMutation();
   const dispatch = useDispatch();
@@ -22,30 +24,91 @@ const LoginPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    setSuccess(false);
+    setIsLoading(true);
+
     try {      
       const response = await login({ email, password }).unwrap();
-      console.log('Login response:', response);
-      console.log('User data:', response.data.user); // Log user data để kiểm tra
-      console.log('User role:', response.data.user.role); // Log role để kiểm tra
       
-      dispatch(setCredentials(response.data)); // Sửa lại để truyền response.data
+      // Hiển thị thông báo thành công
+      setSuccess(true);
       
-      // Kiểm tra nếu là admin thì chuyển đến trang admin dashboard
-      if (response.data.user.role === 'ROLE_ADMIN') {
-        console.log('User is admin, navigating to dashboard');
-        navigate(ROUTES.ADMIN_DASHBOARD);
-      } else {
-        console.log('User is not admin, navigating to home');
-        navigate(ROUTES.HOME);
-      }
+      // Dispatch credentials
+      dispatch(setCredentials(response.data));
+      
+      // Đợi animation thông báo thành công chạy xong rồi mới chuyển trang
+      setTimeout(() => {
+        if (response.data.user.role === 'ROLE_ADMIN') {
+          navigate(ROUTES.ADMIN_DASHBOARD);
+        } else {
+          navigate(ROUTES.HOME);
+        }
+      }, 1500);
+
     } catch (err) {
       console.error('Login error:', err);
       setError('Email hoặc mật khẩu không đúng');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center p-4">
+      {/* Notification Portal - Fixed position */}
+      {(error || success) && (
+        <div className="fixed top-4 right-4 z-50 min-w-[300px] max-w-[90vw] animate-slideInDown">
+          {error && (
+            <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+              <div className="p-4 flex items-start space-x-4">
+                <div className="flex-shrink-0">
+                  <svg className="h-6 w-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-sm font-medium text-gray-900">Đăng nhập thất bại</h3>
+                  <p className="mt-1 text-sm text-gray-500">{error}</p>
+                </div>
+                <button
+                  onClick={() => setError('')}
+                  className="flex-shrink-0 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500"
+                >
+                  <span className="sr-only">Đóng</span>
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="bg-red-50 h-1">
+                <div className="bg-red-500 h-1 animate-countdown" />
+              </div>
+            </div>
+          )}
+          {success && (
+            <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+              <div className="p-4 flex items-start space-x-4">
+                <div className="flex-shrink-0">
+                  <div className="h-6 w-6 text-green-500 relative">
+                    <svg className="animate-circle" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-sm font-medium text-gray-900">Đăng nhập thành công</h3>
+                  <p className="mt-1 text-sm text-gray-500">Đang chuyển hướng...</p>
+                </div>
+              </div>
+              <div className="bg-green-50 h-1">
+                <div className="bg-green-500 h-1 animate-countdown" />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="w-full max-w-[90%] xl:max-w-[70%] 2xl:max-w-[60%] aspect-[16/9] bg-white rounded-2xl shadow-2xl overflow-hidden animate-scaleUp">
         <div className="flex h-full">
           {/* Left side - Hero Section */}
@@ -122,27 +185,21 @@ const LoginPage = () => {
         </div>
 
               <form onSubmit={handleSubmit} className="space-y-[5%]">
-            {error && (
-                  <div className="p-3 bg-red-50 border-l-4 border-red-500 rounded-r-md animate-shake">
-                <p className="text-sm text-red-700">{error}</p>
-              </div>
-            )}
-            
                 <div className="space-y-[4%]">
                   <div className="transform transition-all duration-200 hover:scale-[1.01]">
                     <label
                       htmlFor="email"
                       className="block text-[min(1.6vw,0.875rem)] font-medium text-gray-700 mb-2"
                     >
-                  Email
-                </label>
+                      Email
+                    </label>
                     <div className="relative">
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    required
+                      <input
+                        id="email"
+                        name="email"
+                        type="email"
+                        autoComplete="email"
+                        required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         className="block w-full px-4 py-[min(2vh,0.75rem)] text-[min(1.8vw,1rem)] text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
@@ -151,10 +208,10 @@ const LoginPage = () => {
                       <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                         <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
-                    </svg>
+                        </svg>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
 
                   <div className="transform transition-all duration-200 hover:scale-[1.01]">
                     <label
@@ -198,24 +255,31 @@ const LoginPage = () => {
                 <div>
                   <button
                     type="submit"
-                    className="relative w-full flex items-center justify-center px-6 py-[min(2vh,0.75rem)] text-[min(1.8vw,1rem)] font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-300 transform hover:translate-y-[-2px] hover:shadow-lg active:translate-y-0"
+                    disabled={isLoading}
+                    className={`relative w-full flex items-center justify-center px-6 py-[min(2vh,0.75rem)] text-[min(1.8vw,1rem)] font-medium text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-300 transform hover:translate-y-[-2px] hover:shadow-lg active:translate-y-0 ${
+                      isLoading 
+                        ? 'bg-green-400 cursor-not-allowed' 
+                        : 'bg-green-600 hover:bg-green-700 focus:ring-green-500'
+                    }`}
                   >
-                    <span className="absolute left-0 inset-y-0 flex items-center pl-3">
-                      <svg
-                        className="h-5 w-5 text-green-500 group-hover:text-green-400"
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                        aria-hidden="true"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M10 2a1 1 0 00-1 1v1a1 1 0 002 0V3a1 1 0 00-1-1zM4 4h3a3 3 0 006 0h3a2 2 0 012 2v9a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2zm2.5 7a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm2.45 4a2.5 2.5 0 10-4.9 0h4.9zM12 9a1 1 0 100 2h3a1 1 0 100-2h-3zm-1 4a1 1 0 011-1h2a1 1 0 110 2h-2a1 1 0 01-1-1z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </span>
-                    Đăng nhập
+                    {isLoading ? (
+                      <div className="flex items-center">
+                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Đang xử lý...
+                      </div>
+                    ) : (
+                      <>
+                        <span className="absolute left-0 inset-y-0 flex items-center pl-3">
+                          <svg className="h-5 w-5 text-green-500 group-hover:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                          </svg>
+                        </span>
+                        Đăng nhập
+                      </>
+                    )}
                   </button>
                 </div>
               </form>
@@ -248,9 +312,30 @@ const LoginPage = () => {
           100% { transform: scaleX(1); }
         }
 
+        @keyframes countdown {
+          from { width: 100%; }
+          to { width: 0%; }
+        }
+
+        @keyframes circle {
+          from { transform: rotate(-90deg) scale(0); }
+          to { transform: rotate(0deg) scale(1); }
+        }
+
         @keyframes slideUpFade {
           0% { opacity: 0; transform: translateY(20px); }
           100% { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideInDown {
+          from {
+            transform: translateY(-100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
         }
 
         .animate-kenburns {
@@ -279,6 +364,18 @@ const LoginPage = () => {
 
         .animation-delay-500 {
           animation-delay: 500ms;
+        }
+
+        .animate-countdown {
+          animation: countdown 1.5s linear forwards;
+        }
+
+        .animate-circle {
+          animation: circle 0.3s ease-out forwards;
+        }
+
+        .animate-slideInDown {
+          animation: slideInDown 0.3s ease-out forwards;
         }
       `}</style>
     </div>

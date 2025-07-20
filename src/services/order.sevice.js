@@ -45,7 +45,6 @@ export const orderApi = createApi({
         if (status) params.append('status', status);
         
         const requestUrl = `/orders/admin/list?${params.toString()}`;
-        console.log('🚀 Making API request to:', requestUrl);
         
         return {
           url: requestUrl,
@@ -53,9 +52,7 @@ export const orderApi = createApi({
           credentials: 'include',
         };
       },
-      transformResponse: (response) => {
-        console.log('📦 Raw API Response:', response);
-        
+      transformResponse: (response) => {        
         if (!response.success) {
           console.error('❌ API Error:', {
             success: response.success,
@@ -79,14 +76,11 @@ export const orderApi = createApi({
           }
         };
         
-        console.log('✅ Transformed Data:', transformedData);
         return transformedData;
       },
       async onQueryStarted(arg, { dispatch, queryFulfilled }) {
         try {
-          console.log('🔄 Starting query with args:', arg);
           const result = await queryFulfilled;
-          console.log('✨ Query completed successfully:', result);
         } catch (error) {
           console.error('💥 Query Error:', {
             error: error.error,

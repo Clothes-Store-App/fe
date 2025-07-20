@@ -10,13 +10,6 @@ const ProductForm = () => {
   const [isOpen, setIsOpen] = useState(true);
   const { data: categories } = useGetCategoriesQuery();
   const { data: sizesData, isLoading: sizesLoading } = useGetProductSizesQuery();
-  
-  // Log dữ liệu sizes khi có
-  useEffect(() => {
-    if (sizesData) {
-      console.log('Dữ liệu size từ API:', sizesData);
-    }
-  }, [sizesData]);
 
   const categoryList = categories?.data || [];
   
@@ -53,14 +46,6 @@ const ProductForm = () => {
           const data = await response.json();
           if (data.success && data.data) {
             const product = data.data;
-            console.log('Dữ liệu sản phẩm từ API:', product);
-            console.log('Chi tiết sizes của sản phẩm:', product.colors?.map(color => ({
-              color_name: color.color_name,
-              sizes: color.colorSizes?.map(cs => ({
-                size_id: cs.size.id,
-                size_name: cs.size.size_name
-              }))
-            })));
             
             setFormData({
               name: product.name || '',
@@ -92,17 +77,6 @@ const ProductForm = () => {
 
     loadProduct();
   }, [id]);
-
-  // Log khi formData thay đổi để debug
-  useEffect(() => {
-    if (id && formData.colors.length > 0) {
-      console.log('Form data sau khi load:', formData);
-      console.log('Sizes đã chọn theo màu:', formData.colors.map(color => ({
-        color_name: color.color_name,
-        selected_sizes: color.sizes
-      })));
-    }
-  }, [formData, id]);
   
   // Handle form input changes
   const handleChange = (e) => {
@@ -275,43 +249,19 @@ const ProductForm = () => {
           color_name: color.color_name,
           color_code: color.color_code,
           sizes: color.sizes,
-          // Luôn giữ lại đường dẫn ảnh cũ nếu có, bất kể có ảnh mới hay không
-          image: color.image || null
+          // Nếu không có ảnh mới, giữ lại URL ảnh cũ
+          image: hasNewImageForThisColor ? null : color.image
         };
       });
       
       formDataToSend.append('colors', JSON.stringify(colorsData));
       
-      // Chỉ append những ảnh mới và đánh dấu index của màu tương ứng
-      const newImages = [];
-      const imageIndexes = [];
-      
+      // Chỉ append những ảnh mới
       formData.images.forEach((image, index) => {
         if (image instanceof File) {
-          newImages.push(image);
-          imageIndexes.push(index); // Lưu index của màu sẽ được cập nhật ảnh
+          formDataToSend.append('images', image);
         }
       });
-
-      // Gửi ảnh mới nếu có
-      newImages.forEach(image => {
-        formDataToSend.append('images', image);
-      });
-      
-      // Gửi thông tin về index của các màu cần cập nhật ảnh
-      formDataToSend.append('imageIndexes', JSON.stringify(imageIndexes));
-
-      // Log chi tiết dữ liệu gửi đi
-      console.log('=== DEBUG DỮ LIỆU GỬI ĐI ===');
-      console.log('FormData entries:');
-      for (let pair of formDataToSend.entries()) {
-        console.log(pair[0], pair[1]);
-      }
-      console.log('Colors Data:', colorsData);
-      console.log('Form Data gốc:', formData);
-      console.log('Có ảnh mới:', hasNewImages);
-      console.log('Có ảnh cũ:', hasExistingImages);
-      console.log('=== END DEBUG ===');
 
       if (id) {
         try {
@@ -319,9 +269,7 @@ const ProductForm = () => {
             id,
             data: formDataToSend
           }).unwrap();
-          
-          console.log('Kết quả từ API:', result);
-          
+                    
           if (!result.success) {
             throw new Error(result.message || 'Có lỗi xảy ra khi cập nhật sản phẩm');
           }

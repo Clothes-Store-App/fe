@@ -4,6 +4,7 @@ import UpdateStatusModal from './UpdateStatusModal';
 import { ORDER_STATUS } from '../../../constants';
 import { useGetOrdersByAdminQuery, useUpdateOrderMutation } from '../../../services/order.sevice';
 import Pagination from '../../../components/common/Pagination';
+import Toast from '../../../components/common/Toast';
 
 const OrderList = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -15,6 +16,7 @@ const OrderList = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [sortOrder, setSortOrder] = useState('DESC');
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
 
   const { data: ordersData, isLoading, error, refetch } = useGetOrdersByAdminQuery({
     page: currentPage,
@@ -24,42 +26,19 @@ const OrderList = () => {
     sort: sortOrder
   });
 
-  console.log('🎯 Component Props:', {
-    currentPage,
-    perPage,
-    searchQuery,
-    selectedStatus,
-    sortOrder
-  });
-
-  console.log('📊 Orders Data:', ordersData);
-  
-  if (error) {
-    console.error('❌ Component Error:', {
-      status: error.status,
-      data: error.data,
-      message: error.message
-    });
-  }
-
   // Đảm bảo orders là một mảng và xử lý dữ liệu đúng cách
   const orders = useMemo(() => {
     const result = ordersData?.data?.orders || [];
-    console.log('🔍 Raw orders data:', ordersData);
-    console.log('📦 Orders array:', result);
-    console.log('📊 First order sample:', result[0]);
     return result;
   }, [ordersData?.data?.orders]);
 
   const totalItems = useMemo(() => {
     const total = ordersData?.data?.totalItems || 0;
-    console.log('🔢 Total Items:', total);
     return total;
   }, [ordersData?.data?.totalItems]);
 
   const totalPages = useMemo(() => {
     const pages = ordersData?.data?.totalPages || 1;
-    console.log('📄 Total Pages:', pages);
     return pages;
   }, [ordersData?.data?.totalPages]);
 
@@ -160,10 +139,18 @@ const OrderList = () => {
       
       setIsUpdateModalOpen(false);
       refetch(); // Refresh the orders list after update
-      alert('Cập nhật trạng thái thành công!');
+      setToast({
+        show: true,
+        message: 'Cập nhật trạng thái thành công!',
+        type: 'success'
+      });
     } catch (error) {
       console.error('Failed to update order status:', error);
-      alert('Có lỗi xảy ra khi cập nhật trạng thái!');
+      setToast({
+        show: true,
+        message: 'Có lỗi xảy ra khi cập nhật trạng thái!',
+        type: 'error'
+      });
     }
   };
 
@@ -191,6 +178,13 @@ const OrderList = () => {
 
   return (
     <div className="flex-1 bg-green-50/30">
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast({ ...toast, show: false })}
+        />
+      )}
       <div className="max-w-7xl mx-auto p-6">
         {/* Header Section */}
         <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
@@ -290,7 +284,12 @@ const OrderList = () => {
                         </button>
                         <button
                           onClick={() => handleOpenUpdateStatus(order)}
-                          className="inline-flex items-center justify-center px-3 py-1.5 text-sm font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 hover:text-green-800 transition-colors"
+                          disabled={order.status === 'completed' || order.status === ORDER_STATUS.DELIVERED}
+                          className={`inline-flex items-center justify-center px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                            order.status === 'completed' || order.status === ORDER_STATUS.DELIVERED
+                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200' 
+                            : 'text-green-700 bg-green-50 border border-green-200 hover:bg-green-100 hover:text-green-800'
+                          }`}
                         >
                           Cập nhật
                         </button>
