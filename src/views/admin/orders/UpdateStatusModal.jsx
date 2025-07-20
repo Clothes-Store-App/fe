@@ -3,7 +3,7 @@ import { ORDER_STATUS } from '../../../constants';
 
 const STATUS_LABELS = {
   [ORDER_STATUS.PENDING]: 'Chờ xác nhận',
-  [ORDER_STATUS.PROCESSING]: 'Đang xử lý',
+  [ORDER_STATUS.PROCESSING]: 'Đang giao hàng',
   [ORDER_STATUS.COMPLETED]: 'Đã hoàn thành',
   [ORDER_STATUS.CANCELLED]: 'Đã hủy'
 };
