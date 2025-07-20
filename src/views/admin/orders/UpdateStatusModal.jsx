@@ -4,12 +4,12 @@ const ORDER_STATUS = {
   PENDING: 'pending',
   PROCESSING: 'processing',
   COMPLETED: 'completed',
-  CANCEL: 'cancel'
+  CANCEL: 'cancelled'
 };
 
 const STATUS_LABELS = {
   [ORDER_STATUS.PENDING]: 'Chờ xử lý',
-  [ORDER_STATUS.PROCESSING]: 'Đang xử lý',
+  [ORDER_STATUS.PROCESSING]: 'Đang giao hàng',
   [ORDER_STATUS.COMPLETED]: 'Hoàn thành',
   [ORDER_STATUS.CANCEL]: 'Đã hủy'
 };
