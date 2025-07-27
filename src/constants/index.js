@@ -51,7 +51,8 @@ export const ROUTES = {
   ADMIN_POST_ADD: '/admin/posts/add',
   ADMIN_POST_EDIT: '/admin/posts/edit/:id',
   ADMIN_POST_DETAIL: '/admin/posts/detail/:id',
-  ADMIN_RATINGS: '/admin/ratings'
+  ADMIN_RATINGS: '/admin/ratings',
+  ADMIN_VOUCHERS: '/admin/vouchers',
 };
 
 // Trạng thái đơn hàng

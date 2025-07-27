@@ -23,6 +23,7 @@ import OrderList from '../views/admin/orders/OrderList';
 import SliderList from '../views/admin/sliders/SliderList';
 import UserList from '../views/admin/users/UserList';
 import RatingList from '../views/admin/ratings/RatingList';
+import VoucherList from '../views/admin/vouchers/VoucherList';
 
 // Loading component
 const Loading = () => (
@@ -58,6 +59,7 @@ const AppRoutes = () => {
             <Route path={ROUTES.ADMIN_SLIDERS} element={<SliderList />} />
             <Route path={ROUTES.ADMIN_USERS} element={<UserList />} />
             <Route path={ROUTES.ADMIN_RATINGS} element={<RatingList />} />
+            <Route path={ROUTES.ADMIN_VOUCHERS} element={<VoucherList />} />
           </Route>
         </Route>
         
