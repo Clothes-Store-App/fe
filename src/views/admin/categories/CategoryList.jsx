@@ -28,7 +28,8 @@ const CategoryList = () => {
   
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+  const [statusAction, setStatusAction] = useState(null); // 'hide' or 'show'
   const [currentCategory, setCurrentCategory] = useState(null);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -100,10 +101,11 @@ const CategoryList = () => {
     setIsEditModalOpen(true);
   };
   
-  const handleDelete = (category) => {
+  const handleToggleStatus = useCallback((category) => {
     setCurrentCategory(category);
-    setIsDeleteModalOpen(true);
-  };
+    setStatusAction(category.status ? 'hide' : 'show');
+    setIsStatusModalOpen(true);
+  }, []);
   
   const submitAddCategory = async () => {
     if (!newCategoryName.trim()) {
@@ -153,15 +155,15 @@ const CategoryList = () => {
     }
   };
   
-  const submitDeleteCategory = async () => {
+  const submitToggleStatus = async () => {
     try {
       setIsSubmitting(true);
       await deleteCategory(currentCategory.id).unwrap();
-      toast.success('Xóa danh mục thành công');
-      setIsDeleteModalOpen(false);
+      toast.success(`${currentCategory.status ? 'Ẩn' : 'Hiện'} danh mục thành công`);
+      setIsStatusModalOpen(false);
       setCurrentCategory(null);
     } catch (error) {
-      toast.error(error.data?.message || 'Có lỗi xảy ra khi xóa danh mục');
+      toast.error(error.data?.message || 'Có lỗi xảy ra khi cập nhật trạng thái danh mục');
     } finally {
       setIsSubmitting(false);
     }
@@ -171,7 +173,7 @@ const CategoryList = () => {
     if (categories.length === 0) {
       return (
         <tr>
-          <td colSpan="6" className="px-6 py-4 text-center text-sm text-gray-500">
+          <td colSpan="7" className="px-6 py-4 text-center text-sm text-gray-500">
             Không tìm thấy danh mục nào
           </td>
         </tr>
@@ -209,6 +211,11 @@ const CategoryList = () => {
         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
           {new Date(category.updatedAt).toLocaleDateString('vi-VN')}
         </td>
+        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+          <span className={`px-2 py-1 text-xs font-medium rounded-full ${category.status ? 'text-green-700 bg-green-100' : 'text-red-700 bg-red-100'}`}>
+            {category.status ? 'Đang bán' : 'Ngừng bán'}
+          </span>
+        </td>
         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
           <button
             onClick={() => handleEdit(category)}
@@ -220,18 +227,22 @@ const CategoryList = () => {
             </svg>
           </button>
           <button
-            onClick={() => handleDelete(category)}
-            className="inline-flex items-center justify-center w-8 h-8 text-red-500 bg-red-50 rounded-lg border border-red-200 hover:bg-red-100 hover:text-red-600 hover:border-red-300 transition-colors duration-150"
-            title="Xóa danh mục"
+            onClick={() => handleToggleStatus(category)}
+            className={`inline-flex items-center justify-center w-8 h-8 rounded-lg border transition-colors duration-150 ${category.status ? 'text-red-500 bg-red-50 border-red-200 hover:bg-red-100 hover:text-red-600 hover:border-red-300' : 'text-green-500 bg-green-50 border-green-200 hover:bg-green-100 hover:text-green-600 hover:border-green-300'}`}
+            title={category.status ? 'Ẩn danh mục' : 'Hiện danh mục'}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              {category.status ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              )}
             </svg>
           </button>
         </td>
       </tr>
     ));
-  }, [categories, handleEdit, handleDelete]);
+  }, [categories, handleEdit, handleToggleStatus]);
   
   return (
     <div className="w-full bg-green-50/30 min-h-screen -mt-4 -mx-4 p-8">
@@ -300,6 +311,7 @@ const CategoryList = () => {
                       <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên danh mục</th>
                       <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày tạo</th>
                       <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày cập nhật</th>
+                      <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
                       <th scope="col" className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
                     </tr>
                   </thead>
@@ -513,8 +525,8 @@ const CategoryList = () => {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
-      {isDeleteModalOpen && (
+      {/* Status Toggle Modal */}
+      {isStatusModalOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
             <div className="fixed inset-0 transition-opacity" aria-hidden="true">
@@ -524,17 +536,16 @@ const CategoryList = () => {
             <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
               <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                 <div className="sm:flex sm:items-start">
-                  <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
-                    <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-green-100 sm:mx-0 sm:h-10 sm:w-10">
+                    <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
                   </div>
                   <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                    <h3 className="text-lg leading-6 font-medium text-gray-900">Xác nhận xóa</h3>
+                    <h3 className="text-lg leading-6 font-medium text-gray-900">{statusAction === 'hide' ? 'Ẩn danh mục' : 'Hiện danh mục'}</h3>
                     <div className="mt-2">
                       <p className="text-sm text-gray-500">
-                        Bạn có chắc chắn muốn xóa danh mục <span className="font-semibold">{currentCategory?.name}</span>?
-                        Hành động này không thể hoàn tác.
+                        Bạn có chắc chắn muốn {statusAction === 'hide' ? 'ẩn' : 'hiện'} danh mục <span className="font-semibold">{currentCategory?.name}</span> không?
                       </p>
                     </div>
                   </div>
@@ -543,15 +554,15 @@ const CategoryList = () => {
               <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
                 <button
                   type="button"
-                  onClick={submitDeleteCategory}
+                  onClick={submitToggleStatus}
                   disabled={isSubmitting}
-                  className={`w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm ${isSubmitting ? 'opacity-75 cursor-not-allowed' : ''}`}
+                  className={`w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 ${statusAction === 'hide' ? 'bg-red-600 hover:bg-red-700 focus:ring-red-500' : 'bg-green-600 hover:bg-green-700 focus:ring-green-500'} text-base font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm ${isSubmitting ? 'opacity-75 cursor-not-allowed' : ''}`}
                 >
-                  {isSubmitting ? 'Đang xử lý...' : 'Xóa'}
+                  {isSubmitting ? 'Đang xử lý...' : 'Xác nhận'}
                 </button>
                 <button
                   type="button"
-                  onClick={() => setIsDeleteModalOpen(false)}
+                  onClick={() => setIsStatusModalOpen(false)}
                   className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
                 >
                   Hủy
